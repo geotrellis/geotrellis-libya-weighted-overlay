@@ -32,36 +32,13 @@ object Main {
 
   def main(args: Array[String]): Unit = {
 
-    // implicit val system = ActorSystem("weighted-demo")
+    implicit val system = ActorSystem("weighted-demo")
 
-    // // create and start our service actor
-    // val service = system.actorOf(Props(classOf[WeightedServiceActor], staticPath, config), "weighted-service")
+    // create and start our service actor
+    val service = system.actorOf(Props(classOf[WeightedServiceActor], staticPath, config), "weighted-service")
 
-    // // start a new HTTP server on port 8080 with our service actor as the handler
-    // IO(Http) ! Http.Bind(service, host, port)
-    XXX()
-  }
-
-  def XXX(): Unit = {
-    import geotrellis.raster._
-    import geotrellis.spark._
-    import geotrellis.spark.io._
-    import org.apache.spark.{SparkConf, SparkContext}
-
-    val conf = AvroRegistrator(
-      new SparkConf()
-        .setAppName("Weighted Overlay")
-        .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-        .set("spark.kryo.registrator", "geotrellis.spark.io.kryo.KryoRegistrator"))
-
-    implicit val sparkContext = new SparkContext(conf)
-
-    val (reader, tileReader, attributeStore) = initBackend(config)
-    val roads = reader.read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](LayerId("roads", 12))
-    val places = reader.read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](LayerId("places", 12))
-
-    println(roads.metadata)
-    println(places.metadata)
+    // start a new HTTP server on port 8080 with our service actor as the handler
+    IO(Http) ! Http.Bind(service, host, port)
   }
 
 }
