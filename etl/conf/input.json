@@ -1,0 +1,20 @@
+[
+  {
+    "name": "roads",
+    "format": "geotiff",
+    "backend": {
+      "type": "hadoop",
+      "path": "file:///tmp/roads"
+    },
+    "cache": "NONE"
+  },
+  {
+    "name": "places",
+    "format": "geotiff",
+    "backend": {
+      "type": "hadoop",
+      "path": "file:///tmp/places"
+    },
+    "cache": "NONE"
+  }
+]
