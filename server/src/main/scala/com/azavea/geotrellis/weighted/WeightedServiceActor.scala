@@ -53,7 +53,7 @@ class WeightedServiceActor(override val staticPath: String, config: Config) exte
   override def actorRefFactory = context
   override def receive = runRoute(serviceRoute)
 
-  val (reader, tileReader, attributeStore) = initBackend(config)
+  lazy val (reader, tileReader, attributeStore) = initBackend(config)
 
   val layerNames = attributeStore.layerIds.map(_.name).distinct
 
@@ -63,11 +63,10 @@ class WeightedServiceActor(override val staticPath: String, config: Config) exte
       .mapPartitions({ partition =>
         Iterator(partition
           .map({ case (_, tile) => StreamingHistogram.fromTile(tile, 1<<10) })
-          .reduce(_ + _))
-      }, preservesPartitioning = true)
+          .reduce(_ + _)) },
+        preservesPartitioning = true)
       .reduce(_ + _) })
     .toMap
-
 }
 
 trait WeightedService extends HttpService {
@@ -102,6 +101,8 @@ trait WeightedService extends HttpService {
 
   def colors = complete(ColorRampMap.getJson)
 
+  def histograms: Map[String, StreamingHistogram]
+
   def breaks =
     parameters(
       'layers,
@@ -128,7 +129,7 @@ trait WeightedService extends HttpService {
       ))
     }
 
-  def tms = pathPrefix(IntNumber / IntNumber / IntNumber) { (zoom, x, y) => {
+  def tms = pathPrefix(IntNumber / IntNumber / IntNumber) { (zoom, x, y) =>
     parameters(
       'layers,
       'weights,
@@ -139,53 +140,57 @@ trait WeightedService extends HttpService {
       'mask ? ""
     ) { (layersParam, weightsParam, breaksString, bbox, colors, colorRamp, maskz) =>
 
-      import geotrellis.raster._
-
-      val layers = layersParam.split(",")
-      val weights = weightsParam.split(",").map(_.toInt)
-      val breaks = breaksString.split(",").map(_.toInt)
+      // val breaks = breaksString.split(",").map(_.toInt)
+      // val layers = layersParam.split(",")
+      // val weights = weightsParam.split(",").map(_.toInt)
       val key = SpatialKey(x, y)
 
-      val maskTile =
-        tileReader
-          .reader[SpatialKey, Tile](LayerId("mask", zoom)).read(key)
-          .convert(ShortConstantNoDataCellType)
-          .mutable
+      // val maskTile =
+      //   tileReader
+      //     .reader[SpatialKey, Tile](LayerId("mask", zoom)).read(key)
+      //     .convert(ShortConstantNoDataCellType)
+      //     .mutable
 
-      val (extSeq, tileSeq) =
-        layers.zip(weights)
-          .map({ case (l, weight) =>
-            getMetaData(LayerId(l, zoom)).mapTransform(key) ->
-            tileReader.reader[SpatialKey, Tile](LayerId(l, zoom)).read(key).convert(ShortConstantNoDataCellType) * weight })
-          .toSeq
-          .unzip
+      // val (extSeq, tileSeq) =
+      //   layers.zip(weights)
+      //     .map({ case (l, weight) =>
+      //       getMetaData(LayerId(l, zoom)).mapTransform(key) ->
+      //       tileReader.reader[SpatialKey, Tile](LayerId(l, zoom)).read(key).convert(ShortConstantNoDataCellType) * weight })
+      //     .toSeq
+      //     .unzip
 
-      val extent = extSeq.reduce(_ combine _)
+      // val extent = extSeq.reduce(_ combine _)
 
-      val tileAdd = tileSeq.localAdd
+      // val tileAdd = tileSeq.localAdd
 
-      val tileMap = tileAdd.map(i => if(i == 0) NODATA else i)
+      // val tileMap = tileAdd.map(i => if(i == 0) NODATA else i)
 
-      val tile = tileMap.localMask(maskTile, NODATA, NODATA)
+      // val tile = tileMap.localMask(maskTile, NODATA, NODATA)
 
-      val maskedTile =
-        if (maskz.isEmpty) tile
-        else {
-          val poly =
-            maskz
-              .parseGeoJson[Polygon]
-              .reproject(LatLng, WebMercator)
+      // val maskedTile =
+      //   if (maskz.isEmpty) tile
+      //   else {
+      //     val poly =
+      //       maskz
+      //         .parseGeoJson[Polygon]
+      //         .reproject(LatLng, WebMercator)
 
-          tile.mask(extent, poly.geom)
-        }
+      //     tile.mask(extent, poly.geom)
+      //   }
 
+
+      val layerId = LayerId("roads", zoom)
+      val extent = getMetaData(layerId).mapTransform(key)
+      val tile = tileReader
+        .reader[SpatialKey, Tile](layerId)
+        .read(key)
+      val breaks = histograms.getOrElse("roads", throw new Exception).quantileBreaks(breaksString.split(",").length)
       val ramp = ColorRampMap.getOrElse(colorRamp, ColorRamps.BlueToRed).toColorMap(breaks)
 
+      println(tile.toArray.toList) // XXX
       respondWithMediaType(MediaTypes.`image/png`) {
-        complete(maskedTile.renderPng(ramp).bytes)
+        complete(tile.renderPng(ramp).bytes)
       }
     }
   }
-  }
-
 }
