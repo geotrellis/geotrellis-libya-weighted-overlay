@@ -23,7 +23,7 @@ import com.typesafe.config.ConfigFactory
 import spray.can.Http
 
 
-object Main {
+object Server {
 
   val config = ConfigFactory.load()
   val staticPath = config.getString("geotrellis.server.static-path")
@@ -42,4 +42,3 @@ object Main {
   }
 
 }
-
