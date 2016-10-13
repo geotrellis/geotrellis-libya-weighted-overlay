@@ -19,6 +19,7 @@ package com.azavea.geotrellis.weighted
 import geotrellis.raster._
 import geotrellis.raster.histogram.StreamingHistogram
 
+import scala.collection.mutable
 
 object HistogramMixer {
 
@@ -51,18 +52,28 @@ object HistogramMixer {
     histogram.countItems(newBuckets); histogram
   }
 
-  // XXX memoize
-  def apply(histograms: Seq[StreamingHistogram], weights: Seq[Double]): StreamingHistogram = {
+  val distributions = mutable.Map.empty[Int, StreamingHistogram]
+
+  def apply(histograms: Array[StreamingHistogram], weights: Array[Double]): StreamingHistogram = {
     if (math.max(histograms.length, weights.length) < 2) histograms.head
     else {
-      histograms.zip(weights)
-        .reduce({ (left, right) =>
-          val (x, alpha) = left
-          val (y, beta) = right
+      val key = histograms.toList.hashCode + weights.toList.hashCode
 
-          (convolve(alpha, x, beta, y), alpha+beta) })
-        ._1
+      distributions.synchronized {
+        distributions.get(key) match {
+          case None =>
+            val distribution =
+              histograms.zip(weights)
+                .reduce({ (left, right) =>
+                  val (x, alpha) = left
+                  val (y, beta) = right
+                  (convolve(alpha, x, beta, y), alpha + beta) })._1
+            distributions += (key -> distribution)
+            distribution
+          case Some(distribution) =>
+            distribution
+        }
+      }
     }
   }
-
 }
