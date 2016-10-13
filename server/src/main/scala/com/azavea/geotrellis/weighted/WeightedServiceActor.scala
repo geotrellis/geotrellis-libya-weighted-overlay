@@ -57,6 +57,7 @@ class WeightedServiceActor(override val staticPath: String, config: Config) exte
 
   val layerNames = attributeStore.layerIds.map(_.name).distinct
 
+  // XXX precompute
   val histograms: Map[String, StreamingHistogram] = layerNames.map({ name =>
     name -> reader
       .read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](LayerId(name, 8))
@@ -150,6 +151,7 @@ trait WeightedService extends HttpService {
       val breaks = histogram.quantileBreaks(1<<8)
       val ramp = ColorRampMap.getOrElse(colorRamp, ColorRamps.BlueToRed).toColorMap(breaks)
 
+      // XXX make NODATA transparent
       respondWithMediaType(MediaTypes.`image/png`) {
         complete(tile.renderPng(ramp).bytes)
       }

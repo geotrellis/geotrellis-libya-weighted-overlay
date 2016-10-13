@@ -22,6 +22,7 @@ import geotrellis.raster.histogram.StreamingHistogram
 
 object HistogramMixer {
 
+  // XXX memoize
   def apply(histograms: Seq[StreamingHistogram], weights: Seq[Double]): StreamingHistogram = {
     val histogram = StreamingHistogram(histograms.head.maxBucketCount)
     val buckets =
