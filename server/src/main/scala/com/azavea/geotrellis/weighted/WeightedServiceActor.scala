@@ -119,7 +119,10 @@ trait WeightedService extends HttpService {
       val breaksSeq =
         layers.zip(weights)
           .map({ case (layer, weight) =>
-            reader.read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](layerId(layer)).convert(ShortConstantNoDataCellType) * weight })
+            reader
+              .read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](layerId(layer))
+              .convert(ShortConstantNoDataCellType) * weight
+          })
           .toSeq
 
       val breaksAdd = breaksSeq.localAdd
@@ -131,29 +134,34 @@ trait WeightedService extends HttpService {
       ))
     }
 
-  /* http://localhost:8777/gt/tms/{z}/{x}/{y}/roads,places/0.618,1.618 */
-  def tms = pathPrefix(IntNumber / IntNumber / IntNumber/ PathElement / PathElement) { (zoom, x, y, layersParam, weightsParam) =>
-    parameters('colorRamp ? "blue-to-red") { (colorRamp) =>
-      val key = SpatialKey(x, y)
-      val layers = layersParam.split(",")
-      val weights = weightsParam.split(",").map(_.toDouble)
+  /** http://localhost:8777/gt/tms/{z}/{x}/{y}/roads,places/0.618,1.618?colorRamp=blue-to-yellow-to-red-heatmap */
+  def tms = pathPrefix(IntNumber / IntNumber / IntNumber/ PathElement / PathElement) {
+    (zoom, x, y, layersParam, weightsParam) => {
+      parameters(
+        'colorRamp ? "blue-to-red",
+        'transparent ? "0"
+      ) { (colorRamp, transparentParam) =>
+        val key = SpatialKey(x, y)
+        val layers = layersParam.split(",")
+        val weights = weightsParam.split(",").map(_.toDouble)
+        val transparent = transparentParam.split(",").map(_.toDouble).toSet
 
-      val tiles = layers.map({ name =>
-        tileReader
-          .reader[SpatialKey, Tile](LayerId(name, zoom))
-          .read(key) })
-      val layerHistograms = layers.map({ name =>
-        histograms.getOrElse(name, throw new Exception) })
+        val tiles = layers.map({ name =>
+          tileReader
+            .reader[SpatialKey, Tile](LayerId(name, zoom))
+            .read(key) })
+        val layerHistograms = layers.map({ name =>
+          histograms.getOrElse(name, throw new Exception) })
 
-      val tile = TileMixer(tiles, weights)
-      val histogram = HistogramMixer(layerHistograms, weights)
+        val tile = TileMixer(tiles, weights, transparent)
+        val histogram = HistogramMixer(layerHistograms, weights)
 
-      val breaks = histogram.quantileBreaks(1<<8)
-      val ramp = ColorRampMap.getOrElse(colorRamp, ColorRamps.BlueToRed).toColorMap(breaks)
+        val breaks = histogram.quantileBreaks(1<<8)
+        val ramp = ColorRampMap.getOrElse(colorRamp, ColorRamps.BlueToRed).toColorMap(breaks)
 
-      // XXX make NODATA transparent
-      respondWithMediaType(MediaTypes.`image/png`) {
-        complete(tile.renderPng(ramp).bytes)
+        respondWithMediaType(MediaTypes.`image/png`) {
+          complete(tile.renderPng(ramp).bytes)
+        }
       }
     }
   }
