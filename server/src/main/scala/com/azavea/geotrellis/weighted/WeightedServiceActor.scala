@@ -18,6 +18,7 @@ package com.azavea.geotrellis.weighted
 
 import geotrellis.proj4.{LatLng, WebMercator}
 import geotrellis.raster._
+import geotrellis.raster.histogram.StreamingHistogram
 import geotrellis.raster.mapalgebra.local._
 import geotrellis.raster.render._
 import geotrellis.spark._
@@ -53,6 +54,21 @@ class WeightedServiceActor(override val staticPath: String, config: Config) exte
   override def receive = runRoute(serviceRoute)
 
   lazy val (reader, tileReader, attributeStore) = initBackend(config)
+
+  val layerNames = attributeStore.layerIds.map(_.name).distinct
+
+  // XXX precompute
+  val histograms: Map[String, StreamingHistogram] = layerNames.map({ name =>
+    name -> reader
+      .read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](LayerId(name, 8))
+      .mapPartitions({ partition =>
+        Iterator(partition
+          .map({ case (_, tile) => StreamingHistogram.fromTile(tile, 1<<9) })
+          .reduce(_ + _)) },
+        preservesPartitioning = true)
+      .reduce(_ + _) })
+    .toMap
+
 }
 
 trait WeightedService extends HttpService {
@@ -87,6 +103,8 @@ trait WeightedService extends HttpService {
 
   def colors = complete(ColorRampMap.getJson)
 
+  def histograms: Map[String, StreamingHistogram]
+
   def breaks =
     parameters(
       'layers,
@@ -113,64 +131,31 @@ trait WeightedService extends HttpService {
       ))
     }
 
-  def tms = pathPrefix(IntNumber / IntNumber / IntNumber) { (zoom, x, y) => {
-    parameters(
-      'layers,
-      'weights,
-      'breaks,
-      'bbox.?,
-      'colors.as[Int] ? 4,
-      'colorRamp ? "blue-to-red",
-      'mask ? ""
-    ) { (layersParam, weightsParam, breaksString, bbox, colors, colorRamp, maskz) =>
-
-      import geotrellis.raster._
-
-      val layers = layersParam.split(",")
-      val weights = weightsParam.split(",").map(_.toInt)
-      val breaks = breaksString.split(",").map(_.toInt)
+  /* http://localhost:8777/gt/tms/{z}/{x}/{y}/roads,places/0.618,1.618 */
+  def tms = pathPrefix(IntNumber / IntNumber / IntNumber/ PathElement / PathElement) { (zoom, x, y, layersParam, weightsParam) =>
+    parameters('colorRamp ? "blue-to-red") { (colorRamp) =>
       val key = SpatialKey(x, y)
+      val layers = layersParam.split(",")
+      val weights = weightsParam.split(",").map(_.toDouble)
 
-      val maskTile =
+      val tiles = layers.map({ name =>
         tileReader
-          .reader[SpatialKey, Tile](LayerId("mask", zoom)).read(key)
-          .convert(ShortConstantNoDataCellType)
-          .mutable
+          .reader[SpatialKey, Tile](LayerId(name, zoom))
+          .read(key) })
+      val layerHistograms = layers.map({ name =>
+        histograms.getOrElse(name, throw new Exception) })
 
-      val (extSeq, tileSeq) =
-        layers.zip(weights)
-          .map({ case (l, weight) =>
-            getMetaData(LayerId(l, zoom)).mapTransform(key) ->
-            tileReader.reader[SpatialKey, Tile](LayerId(l, zoom)).read(key).convert(ShortConstantNoDataCellType) * weight })
-          .toSeq
-          .unzip
+      val tile = TileMixer(tiles, weights)
+      val histogram = HistogramMixer(layerHistograms, weights)
 
-      val extent = extSeq.reduce(_ combine _)
-
-      val tileAdd = tileSeq.localAdd
-
-      val tileMap = tileAdd.map(i => if(i == 0) NODATA else i)
-
-      val tile = tileMap.localMask(maskTile, NODATA, NODATA)
-
-      val maskedTile =
-        if (maskz.isEmpty) tile
-        else {
-          val poly =
-            maskz
-              .parseGeoJson[Polygon]
-              .reproject(LatLng, WebMercator)
-
-          tile.mask(extent, poly.geom)
-        }
-
+      val breaks = histogram.quantileBreaks(1<<8)
       val ramp = ColorRampMap.getOrElse(colorRamp, ColorRamps.BlueToRed).toColorMap(breaks)
 
+      // XXX make NODATA transparent
       respondWithMediaType(MediaTypes.`image/png`) {
-        complete(maskedTile.renderPng(ramp).bytes)
+        complete(tile.renderPng(ramp).bytes)
       }
     }
-  }
   }
 
 }
