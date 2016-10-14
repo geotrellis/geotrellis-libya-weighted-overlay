@@ -18,7 +18,8 @@ package com.azavea.geotrellis.weighted
 
 import geotrellis.proj4.{LatLng, WebMercator}
 import geotrellis.raster._
-import geotrellis.raster.histogram.StreamingHistogram
+import geotrellis.raster.histogram._
+import geotrellis.raster.io._
 import geotrellis.raster.mapalgebra.local._
 import geotrellis.raster.render._
 import geotrellis.spark._
@@ -57,18 +58,13 @@ class WeightedServiceActor(override val staticPath: String, config: Config) exte
 
   val layerNames = attributeStore.layerIds.map(_.name).distinct
 
-  // XXX precompute
-  val histograms: Map[String, StreamingHistogram] = layerNames.map({ name =>
-    name -> reader
-      .read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](LayerId(name, 8))
-      .mapPartitions({ partition =>
-        Iterator(partition
-          .map({ case (_, tile) => StreamingHistogram.fromTile(tile, 1<<9) })
-          .reduce(_ + _)) },
-        preservesPartitioning = true)
-      .reduce(_ + _) })
-    .toMap
-
+  val histograms: Map[String, StreamingHistogram] =
+    layerNames
+      .map({ layerName =>
+        val id = LayerId(layerName, 0)
+        (layerName ->
+          attributeStore.read[Histogram[Double]](id, "histogram").asInstanceOf[StreamingHistogram]) })
+      .toMap
 }
 
 trait WeightedService extends HttpService {
@@ -119,7 +115,10 @@ trait WeightedService extends HttpService {
       val breaksSeq =
         layers.zip(weights)
           .map({ case (layer, weight) =>
-            reader.read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](layerId(layer)).convert(ShortConstantNoDataCellType) * weight })
+            reader
+              .read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](layerId(layer))
+              .convert(ShortConstantNoDataCellType) * weight
+          })
           .toSeq
 
       val breaksAdd = breaksSeq.localAdd
@@ -131,29 +130,34 @@ trait WeightedService extends HttpService {
       ))
     }
 
-  /* http://localhost:8777/gt/tms/{z}/{x}/{y}/roads,places/0.618,1.618 */
-  def tms = pathPrefix(IntNumber / IntNumber / IntNumber/ PathElement / PathElement) { (zoom, x, y, layersParam, weightsParam) =>
-    parameters('colorRamp ? "blue-to-red") { (colorRamp) =>
-      val key = SpatialKey(x, y)
-      val layers = layersParam.split(",")
-      val weights = weightsParam.split(",").map(_.toDouble)
+  /** http://localhost:8777/gt/tms/{z}/{x}/{y}/roads,places/0.618,1.618?colorRamp=blue-to-yellow-to-red-heatmap */
+  def tms = pathPrefix(IntNumber / IntNumber / IntNumber/ PathElement / PathElement) {
+    (zoom, x, y, layersParam, weightsParam) => {
+      parameters(
+        'colorRamp ? "blue-to-red",
+        'transparent ? "0"
+      ) { (colorRamp, transparentParam) =>
+        val key = SpatialKey(x, y)
+        val layers = layersParam.split(",")
+        val weights = weightsParam.split(",").map(_.toDouble)
+        val transparent = transparentParam.split(",").map(_.toDouble).toSet
 
-      val tiles = layers.map({ name =>
-        tileReader
-          .reader[SpatialKey, Tile](LayerId(name, zoom))
-          .read(key) })
-      val layerHistograms = layers.map({ name =>
-        histograms.getOrElse(name, throw new Exception) })
+        val tiles = layers.map({ name =>
+          tileReader
+            .reader[SpatialKey, Tile](LayerId(name, zoom))
+            .read(key) })
+        val layerHistograms = layers.map({ name =>
+          histograms.getOrElse(name, throw new Exception) })
 
-      val tile = TileMixer(tiles, weights)
-      val histogram = HistogramMixer(layerHistograms, weights)
+        val tile = TileMixer(tiles, weights, transparent)
+        val histogram = HistogramMixer(layerHistograms, weights)
 
-      val breaks = histogram.quantileBreaks(1<<8)
-      val ramp = ColorRampMap.getOrElse(colorRamp, ColorRamps.BlueToRed).toColorMap(breaks)
+        val breaks = histogram.quantileBreaks(1<<8)
+        val ramp = ColorRampMap.getOrElse(colorRamp, ColorRamps.BlueToRed).toColorMap(breaks)
 
-      // XXX make NODATA transparent
-      respondWithMediaType(MediaTypes.`image/png`) {
-        complete(tile.renderPng(ramp).bytes)
+        respondWithMediaType(MediaTypes.`image/png`) {
+          complete(tile.renderPng(ramp).bytes)
+        }
       }
     }
   }

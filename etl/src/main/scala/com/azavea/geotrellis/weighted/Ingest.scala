@@ -16,9 +16,14 @@
 
 package com.azavea.geotrellis.weighted
 
+import geotrellis.raster.histogram._
+import geotrellis.raster.io._
 import geotrellis.raster.Tile
 import geotrellis.spark._
-import geotrellis.spark.etl.Etl
+import geotrellis.spark.etl.config.EtlConf
+import geotrellis.spark.etl.{Etl, OutputPlugin}
+import geotrellis.spark.io._
+import geotrellis.spark.io.hadoop._
 import geotrellis.spark.SpatialKey
 import geotrellis.spark.util.SparkUtils
 import geotrellis.vector.ProjectedExtent
@@ -31,6 +36,39 @@ object Ingest extends App {
 
   try {
     Etl.ingest[ProjectedExtent, SpatialKey, Tile](args)
+
+    val conf = EtlConf(args).head
+    val output = conf.output
+    val backend = output.backend
+    val outputPlugin =
+      Etl.defaultModules.reduce(_ union _)
+        .findSubclassOf[OutputPlugin[SpatialKey, Tile, TileLayerMetadata[SpatialKey]]]
+        .find { _.suitableFor(output.backend.`type`.name) }
+        .getOrElse(sys.error(s"Unable to find output module of type '${output.backend.`type`.name}'"))
+    val attributeStore = outputPlugin.attributes(conf)
+    val layerNames = attributeStore.layerIds.map(_.name).distinct
+    val reader = attributeStore match {
+      case as: HadoopAttributeStore => HadoopLayerReader(as)
+      case _ => throw new Exception
+    }
+
+    layerNames.foreach({ layerName =>
+      val layerId = LayerId(layerName, 8)
+      val histogram: StreamingHistogram =
+        reader
+          .read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](LayerId(layerName, 8))
+          .mapPartitions({ partition =>
+            Iterator(partition
+              .map({ case (_, tile) => StreamingHistogram.fromTile(tile, 1<<9) })
+              .reduce(_ + _)) },
+            preservesPartitioning = true)
+          .reduce(_ + _)
+
+      attributeStore.write(
+        LayerId(layerName, 0),
+        "histogram",
+        histogram.asInstanceOf[Histogram[Double]])
+    })
   } finally {
     sc.stop()
   }
