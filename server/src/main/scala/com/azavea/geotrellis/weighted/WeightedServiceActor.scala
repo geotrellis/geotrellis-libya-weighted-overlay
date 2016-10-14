@@ -18,7 +18,8 @@ package com.azavea.geotrellis.weighted
 
 import geotrellis.proj4.{LatLng, WebMercator}
 import geotrellis.raster._
-import geotrellis.raster.histogram.StreamingHistogram
+import geotrellis.raster.histogram._
+import geotrellis.raster.io._
 import geotrellis.raster.mapalgebra.local._
 import geotrellis.raster.render._
 import geotrellis.spark._
@@ -57,18 +58,13 @@ class WeightedServiceActor(override val staticPath: String, config: Config) exte
 
   val layerNames = attributeStore.layerIds.map(_.name).distinct
 
-  // XXX precompute
-  val histograms: Map[String, StreamingHistogram] = layerNames.map({ name =>
-    name -> reader
-      .read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](LayerId(name, 8))
-      .mapPartitions({ partition =>
-        Iterator(partition
-          .map({ case (_, tile) => StreamingHistogram.fromTile(tile, 1<<9) })
-          .reduce(_ + _)) },
-        preservesPartitioning = true)
-      .reduce(_ + _) })
-    .toMap
-
+  val histograms: Map[String, StreamingHistogram] =
+    layerNames
+      .map({ layerName =>
+        val id = LayerId(layerName, 0)
+        (layerName ->
+          attributeStore.read[Histogram[Double]](id, "histogram").asInstanceOf[StreamingHistogram]) })
+      .toMap
 }
 
 trait WeightedService extends HttpService {
