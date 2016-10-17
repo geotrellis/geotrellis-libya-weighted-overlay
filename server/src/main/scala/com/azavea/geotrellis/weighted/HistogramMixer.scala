@@ -24,12 +24,13 @@ import scala.collection.mutable
 object HistogramMixer {
 
   /**
-    * For random variables X and Y with PDFs p(X) and p(Y),
-    * p(αX + βY) = αp(X) ∗ βp(Y) where ∗ is the convolution operator.
+    * For random variables X and Y with PDFs $p_{X}$ and $p_{Y}$,
+    * $p_{αX + βY} = αp_{X} \star βp_{Y}$ where $\star$ is the
+    * convolution operator.
     *
     * https://en.wikipedia.org/wiki/Convolution#Discrete_convolution
     */
-  def convolve(
+  private def convolve(
     alpha: Double, x: StreamingHistogram,
     beta: Double, y: StreamingHistogram
   ): StreamingHistogram = {
@@ -54,6 +55,9 @@ object HistogramMixer {
 
   val distributions = mutable.Map.empty[Int, StreamingHistogram]
 
+  /**
+    * Given $p_{X_{i}}$ and $α_{i}$, return $p_{\sum α_{i}X_{i}}$.
+    */
   def apply(histograms: Array[StreamingHistogram], weights: Array[Double]): StreamingHistogram = {
     if (math.max(histograms.length, weights.length) < 2) histograms.head
     else {
@@ -62,12 +66,15 @@ object HistogramMixer {
       distributions.synchronized {
         distributions.get(key) match {
           case None =>
+            if (distributions.size >= (1<<20)) distributions.clear
+
             val distribution =
               histograms.zip(weights)
                 .reduce({ (left, right) =>
                   val (x, alpha) = left
                   val (y, beta) = right
                   (convolve(alpha, x, beta, y), alpha + beta) })._1
+
             distributions += (key -> distribution)
             distribution
           case Some(distribution) =>
