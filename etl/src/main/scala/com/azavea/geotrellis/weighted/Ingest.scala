@@ -20,10 +20,15 @@ import geotrellis.raster.histogram._
 import geotrellis.raster.io._
 import geotrellis.raster.Tile
 import geotrellis.spark._
-import geotrellis.spark.etl.config.EtlConf
+import geotrellis.spark.etl.config._
 import geotrellis.spark.etl.{Etl, OutputPlugin}
 import geotrellis.spark.io._
+import geotrellis.spark.io.accumulo._
+import geotrellis.spark.io.cassandra._
+import geotrellis.spark.io.file._
 import geotrellis.spark.io.hadoop._
+import geotrellis.spark.io.hbase._
+import geotrellis.spark.io.s3._
 import geotrellis.spark.SpatialKey
 import geotrellis.spark.util.SparkUtils
 import geotrellis.vector.ProjectedExtent
@@ -39,6 +44,7 @@ object Ingest extends App {
 
     val conf = EtlConf(args).head
     val output = conf.output
+    val outputProfile = conf.outputProfile
     val backend = output.backend
     val outputPlugin =
       Etl.defaultModules.reduce(_ union _)
@@ -47,13 +53,28 @@ object Ingest extends App {
         .getOrElse(sys.error(s"Unable to find output module of type '${output.backend.`type`.name}'"))
     val attributeStore = outputPlugin.attributes(conf)
     val layerNames = attributeStore.layerIds.map(_.name).distinct
-    val reader = attributeStore match {
-      case as: HadoopAttributeStore => HadoopLayerReader(as)
+    val reader = (attributeStore, outputProfile) match {
+      case (as: HadoopAttributeStore, _) => HadoopLayerReader(as)
+      case (as: FileAttributeStore, _) => FileLayerReader(as)
+      case (as: S3AttributeStore, _) => S3LayerReader(as)
+      case (as: AccumuloAttributeStore, Some(opp: AccumuloProfile)) =>
+        implicit val instance = opp.getInstance
+        AccumuloLayerReader(as)
+      case (as: CassandraAttributeStore, Some(opp: CassandraProfile)) =>
+        implicit val instance = opp.getInstance
+        CassandraLayerReader(as)
+      case (as: HBaseAttributeStore, Some(opp: HBaseProfile)) =>
+        implicit val instance = opp.getInstance
+        HBaseLayerReader(as)
       case _ => throw new Exception
     }
 
     layerNames.foreach({ layerName =>
-      val layerId = LayerId(layerName, 8)
+      val maxZoom = attributeStore.layerIds
+        .filter(_.name == layerName)
+        .map(_.zoom)
+        .reduce(math.max)
+      val layerId = LayerId(layerName, math.min(9, maxZoom))
       val histogram: StreamingHistogram =
         reader
           .read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](LayerId(layerName, 8))
