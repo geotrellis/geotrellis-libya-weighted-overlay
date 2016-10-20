@@ -30,20 +30,23 @@ object TileMixer {
     val rows = tiles.head.rows
 
     val doubleArray =
-      tiles
-        .map({ tile => tile.toArray }).zip(weights)
-        .map({ case (array, weight) =>
-          array.map({ z =>
-            if (!isData(z)) Double.NaN
-            else z*weight })
-        }) // one array per source tile
-        .reduce({ (left: Array[Double], right: Array[Double]) =>
-          left.zip(right).map({ case (a, b) => a + b })
-        }) // the sum of the arrays
-        .map({ z =>
+      (if (math.max(tiles.length, weights.length) < 2) {
+        tiles.head.toArrayDouble
+      } else {
+        tiles
+          .map({ tile => tile.toArray }).zip(weights)
+          .map({ case (array, weight) =>
+            array.map({ z =>
+              if (!isData(z)) Double.NaN
+              else z*weight })
+          }) // one array per source tile
+          .reduce({ (left: Array[Double], right: Array[Double]) =>
+            left.zip(right).map({ case (a, b) => a + b })
+          }) // the sum of the arrays
+      }).map({ z =>
           if (transparent.contains(z)) Double.NaN
           else z
-        }) // mask out values which should be transparent
+      }) // mask out values which should be transparent
 
     DoubleArrayTile(doubleArray, cols, rows, DoubleConstantNoDataCellType)
   }

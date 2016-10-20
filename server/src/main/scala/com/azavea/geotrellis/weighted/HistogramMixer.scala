@@ -24,10 +24,16 @@ import scala.collection.mutable
 object HistogramMixer {
 
   /**
-    * For random variables X and Y with PDFs $p_{X}$ and $p_{Y}$,
-    * $p_{αX + βY} = αp_{X} \star βp_{Y}$ where $\star$ is the
-    * convolution operator.
+    * For independant random variables X and Y with PDFs $p_{X}$ and
+    * $p_{Y}$, $p_{αX + βY} = αp_{X} \star βp_{Y}$ where $\star$ is
+    * the convolution operator.
     *
+    * If the random variables are not independant (e.g. if you are
+    * trying to add two copies of the same layer) then the
+    * distributions produced by this function are not valid for that
+    * purpose.
+    *
+    * https://en.wikipedia.org/wiki/Convolution_of_probability_distributions
     * https://en.wikipedia.org/wiki/Convolution#Discrete_convolution
     */
   private def convolve(
@@ -36,15 +42,14 @@ object HistogramMixer {
   ): StreamingHistogram = {
     val nX = x.totalCount
     val nY = y.totalCount
-    val n = alpha*nX + beta*nY
 
     val newBuckets =
-      x.buckets.flatMap({ case StreamingHistogram.Bucket(x, nx) =>
-        val px = nx.toDouble / nX
-        y.buckets.map({ case StreamingHistogram.Bucket(y, ny) =>
-          val py = ny.toDouble / nY
-          val newLabel = alpha*x + beta*y
-          val newCount = (px * py * n)
+      x.buckets.flatMap({ case StreamingHistogram.Bucket(labelX, countX) =>
+        val px = countX.toDouble / nX
+        y.buckets.map({ case StreamingHistogram.Bucket(labelY, countY) =>
+          val py = countY.toDouble / nY
+          val newLabel = alpha*labelX + beta*labelY
+          val newCount = 1e12 * px*py
           StreamingHistogram.Bucket(newLabel, newCount.toLong)
         })
       })
@@ -61,7 +66,7 @@ object HistogramMixer {
   def apply(histograms: Array[StreamingHistogram], weights: Array[Double]): StreamingHistogram = {
     if (math.max(histograms.length, weights.length) < 2) histograms.head
     else {
-      val key = histograms.toList.hashCode + weights.toList.hashCode
+      val key = (histograms ++ weights).map(_.hashCode).sum
 
       distributions.synchronized {
         distributions.get(key) match {
