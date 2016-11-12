@@ -1,16 +1,16 @@
 {
-    "backend": {
-        "type": "hadoop",
-        "path": "file:///tmp/catalog/"
-    },
-    "reprojectMethod": "buffered",
-    "pyramid": true,
-    "tileSize": 256,
-    "keyIndexMethod": {
-	"type": "zorder"
-    },
-    "resampleMethod": "bilinear",
-    "layoutScheme": "zoomed",
-    "cellType": "int32",
-    "crs": "EPSG:3857"
+  "backend": {
+    "type": "file",
+    "path": "/Users/rob/proj/rb/libya-weighted-overlay/data/catalog"
+  },
+  "reprojectMethod": "buffered",
+  "pyramid": true,
+  "tileSize": 256,
+  "keyIndexMethod": {
+    "type": "zorder"
+  },
+  "resampleMethod": "bilinear",
+  "layoutScheme": "zoomed",
+  "cellType": "float32raw",
+  "crs": "EPSG:3857"
 }

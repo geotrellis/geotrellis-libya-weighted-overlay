@@ -1,19 +1,19 @@
 [
   {
-    "name": "roads",
+    "name": "conflict",
     "format": "geotiff",
     "backend": {
       "type": "hadoop",
-      "path": "file:///tmp/roads"
+      "path": "file:///Users/rob/proj/rb/libya-weighted-overlay/data/Acled/Conflict_Data_Acled.tif"
     },
     "cache": "NONE"
   },
   {
-    "name": "places",
+    "name": "pipeline",
     "format": "geotiff",
     "backend": {
       "type": "hadoop",
-      "path": "file:///tmp/places"
+      "path": "file:///Users/rob/proj/rb/libya-weighted-overlay/data/Oil_Pipeline/Buffed_EDIS.tif"
     },
     "cache": "NONE"
   }

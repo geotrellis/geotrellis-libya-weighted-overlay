@@ -1,0 +1,36 @@
+{
+    "title" : "Libya Model",
+    "weightedOverlay": {
+        "numBreaks" : "10",
+        "opacity"   : "0.75",
+        "ramp"      : "yellow-to-red-heatmap",
+        "layers" : [ { "name" : "conflict",
+                       "weight" : "1",
+                       "display" : "Conflict Areas" },
+                     { "name" : "pipeline",
+                       "weight" : "1",
+                       "display" : "Distance to Oil Pipeline" },
+                     { "name" : "v:airstrikes:60",
+                       "weight" : "1",
+                       "display" : "Air strikes" },
+                     { "name" : "v:population:60",
+                       "weight" : "1",
+                       "display" : "Population Centers" },
+                     { "name" : "v:weaponRoute:60",
+                       "weight" : "1",
+                       "display" : "Weapon Routes" },
+                     { "name" : "v:peopleRoute:60",
+                       "weight" : "1",
+                       "display" : "People Routes" },
+                     { "name" : "v:drugRoute:60",
+                       "weight" : "1",
+                       "display" : "Drug Routes" },
+                     { "name" : "v:refineries:60",
+                       "weight" : "1",
+                       "display" : "Oil Refineries" },
+                     { "name" : "v:isAllies:60",
+                       "weight" : "1",
+                       "display" : "ISIL Allies" }
+                   ]
+    }
+}

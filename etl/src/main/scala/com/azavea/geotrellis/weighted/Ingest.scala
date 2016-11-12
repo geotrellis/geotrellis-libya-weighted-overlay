@@ -16,20 +16,15 @@
 
 package com.azavea.geotrellis.weighted
 
+import geotrellis.raster._
 import geotrellis.raster.histogram._
 import geotrellis.raster.io._
 import geotrellis.raster.Tile
 import geotrellis.spark._
 import geotrellis.spark.etl.config._
-import geotrellis.spark.etl.{Etl, OutputPlugin}
+import geotrellis.spark.etl.Etl
 import geotrellis.spark.io._
-import geotrellis.spark.io.accumulo._
-import geotrellis.spark.io.cassandra._
 import geotrellis.spark.io.file._
-import geotrellis.spark.io.hadoop._
-import geotrellis.spark.io.hbase._
-import geotrellis.spark.io.s3._
-import geotrellis.spark.SpatialKey
 import geotrellis.spark.util.SparkUtils
 import geotrellis.vector.ProjectedExtent
 
@@ -37,59 +32,49 @@ import org.apache.spark.SparkConf
 
 
 object Ingest extends App {
-  implicit val sc = SparkUtils.createSparkContext("GeoTrellis ETL SinglebandIngest", new SparkConf(true))
+  implicit val sc = SparkUtils.createSparkContext("Libya Weighted Overlay ETL", new SparkConf(true))
 
   try {
-    Etl.ingest[ProjectedExtent, SpatialKey, Tile](args)
+    EtlConf(args) foreach { conf =>
+      val etl = Etl(conf)
 
-    val conf = EtlConf(args).head
-    val output = conf.output
-    val outputProfile = conf.outputProfile
-    val backend = output.backend
-    val outputPlugin =
-      Etl.defaultModules.reduce(_ union _)
-        .findSubclassOf[OutputPlugin[SpatialKey, Tile, TileLayerMetadata[SpatialKey]]]
-        .find { _.suitableFor(output.backend.`type`.name) }
-        .getOrElse(sys.error(s"Unable to find output module of type '${output.backend.`type`.name}'"))
-    val attributeStore = outputPlugin.attributes(conf)
-    val layerNames = attributeStore.layerIds.map(_.name).distinct
-    val reader = (attributeStore, outputProfile) match {
-      case (as: HadoopAttributeStore, _) => HadoopLayerReader(as)
-      case (as: FileAttributeStore, _) => FileLayerReader(as)
-      case (as: S3AttributeStore, _) => S3LayerReader(as)
-      case (as: AccumuloAttributeStore, Some(opp: AccumuloProfile)) =>
-        implicit val instance = opp.getInstance
-        AccumuloLayerReader(as)
-      case (as: CassandraAttributeStore, Some(opp: CassandraProfile)) =>
-        implicit val instance = opp.getInstance
-        CassandraLayerReader(as)
-      case (as: HBaseAttributeStore, Some(opp: HBaseProfile)) =>
-        implicit val instance = opp.getInstance
-        HBaseLayerReader(as)
-      case _ => throw new Exception
+      val sourceTiles =
+        etl.load[ProjectedExtent, Tile]
+          .mapValues { tile =>
+            tile
+              .mapDouble { z =>
+              if(z <= 0.0 || isNoData(z)) { 0.0 }
+              else { z }
+            }
+          }
+
+      val (zoom, tiled) = etl.tile[ProjectedExtent, Tile, SpatialKey](sourceTiles)
+
+      val modifiedLayer =
+        tiled
+          .withContext { rdd =>
+            val (min, max) = rdd.minMaxDouble
+            rdd
+              .mapValues { tile =>
+                tile.normalize(min, max, 0.0, 100.0)
+              }
+          }
+
+      val s = scala.collection.mutable.Set[String]()
+      etl.save[SpatialKey, Tile](LayerId(etl.input.name, zoom), modifiedLayer, { (attributeStore, layerWriter, layerId, layer) =>
+        layerWriter.write(layerId, layer)
+
+        // Save off histogram of the base layer, store in zoom 0's attributes.
+        if(!s.contains(layerId.name)) {
+          val histogram = layer.histogram(512)
+          attributeStore.write(
+            layerId.copy(zoom = 0),
+            "histogram",
+            histogram: Histogram[Double])
+          s += layerId.name
+        }
+      })
     }
-
-    layerNames.foreach({ layerName =>
-      val maxZoom = attributeStore.layerIds
-        .filter(_.name == layerName)
-        .map(_.zoom)
-        .reduce(math.max)
-      val layerId = LayerId(layerName, math.min(9, maxZoom))
-      val histogram: StreamingHistogram =
-        reader
-          .read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](LayerId(layerName, 8))
-          .mapPartitions({ partition =>
-            Iterator(partition
-              .map({ case (_, tile) => StreamingHistogram.fromTile(tile, 1<<9) })
-              .reduce(_ + _)) },
-            preservesPartitioning = true)
-          .reduce(_ + _)
-
-      attributeStore.write(
-        LayerId(layerName, 0),
-        "histogram",
-        histogram.asInstanceOf[Histogram[Double]])
-    })
   } finally {
     sc.stop()
   }

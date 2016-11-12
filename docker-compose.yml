@@ -1,0 +1,8 @@
+version: '2'
+services:
+    server:
+      image: quay.io/lossyrob/interpolation-as-a-service:latest
+      volumes:
+        - '${HOME}/.aws:/root/.aws'
+      ports:
+        - 7070:7070

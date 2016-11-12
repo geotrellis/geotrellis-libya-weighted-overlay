@@ -23,7 +23,7 @@ import com.typesafe.config.ConfigFactory
 import spray.can.Http
 
 
-object Server {
+object Main {
 
   val config = ConfigFactory.load()
   val staticPath = config.getString("geotrellis.server.static-path")
@@ -34,8 +34,11 @@ object Server {
 
     implicit val system = ActorSystem("weighted-demo")
 
+    val dataModel =
+      new DataModel(config)
+
     // create and start our service actor
-    val service = system.actorOf(Props(classOf[WeightedServiceActor], staticPath, config), "weighted-service")
+    val service = system.actorOf(Props(classOf[WeightedServiceActor], staticPath, dataModel), "weighted-service")
 
     // start a new HTTP server on port 8080 with our service actor as the handler
     IO(Http) ! Http.Bind(service, host, port)
