@@ -86,21 +86,31 @@ object VectorLayers {
   def setToTile(name: String, tile: MutableArrayTile, weight: Double, rasterExtent: RasterExtent): Tile =
     name match {
       case PopulationName(d) =>
+        // This case is an exception to the "getBuffered" case,
+        // since we want to use the feature data per point
+        // in rasterization.
         val centers =
           populationCenters
-            .map(_.mapGeom(_.buffer(d.toInt * 1000).as[Polygon].get))
+            .map { feature =>
+              feature.mapGeom { geom =>
+                geom.buffer(d.toInt * 1000).as[Polygon].get
+              }
+            }
+
         for(p <- centers if p.geom.intersects(rasterExtent.extent)) {
           rasterExtent.foreach(p.geom) { (col, row) =>
             val z = tile.getDouble(col, row) + (p.data.popDifSirtNormalized * 100 * weight)
             tile.setDouble(col, row, z)
           }
         }
+
         tile
       case AirStrikeName(d) =>
         val buffered =
           getBuffered("airstrikes", d.toInt * 1000) {
             airstrikesGeom.buffer(d.toInt * 1000).asMultiPolygon.get
           }
+
         bufferTile(tile, weight, d.toInt, buffered, rasterExtent)
       case WeaponRouteName(d) =>
         val buffered =

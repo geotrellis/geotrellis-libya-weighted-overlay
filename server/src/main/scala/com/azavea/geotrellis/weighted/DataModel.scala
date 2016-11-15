@@ -40,7 +40,8 @@ class DataModel(config: Config) {
     layoutMap(zoom).mapTransform(col, row)
 
 
-  val breaksTileRasterExtent = layoutMap(5).createAlignedRasterExtent(VectorLayers.libya.envelope)
+  val breaksTileRasterExtent =
+    layoutMap(5).createAlignedRasterExtent(VectorLayers.libya.envelope)
 
   // Here we read each raster layer in the catalog our at zoom 5,
   // and store integer version of the tiles off for
@@ -110,14 +111,16 @@ class DataModel(config: Config) {
   }
 
   def getBreaks(layers: Seq[String], weights: Seq[Double], numBreaks: Int): Array[Double] = {
-    val tiles =
+    val rasterTiles =
       layers.zip(weights)
         .filter(!_._1.startsWith("v:"))
         .map { case (name, weight) =>
           breaksTileMap(name) * weight
-        } ++ createTileForVectors(layers, weights, breaksTileRasterExtent).toSeq
+        }
+    val vectorTiles =
+      createTileForVectors(layers, weights, breaksTileRasterExtent).toSeq
 
-    tiles
+    (rasterTiles ++ vectorTiles)
       .localAdd
       .convert(DoubleConstantNoDataCellType)
       .mapDouble { z => if(z == 0.0) { Double.NaN } else z }
@@ -131,7 +134,7 @@ class DataModel(config: Config) {
 
     if(!extent.intersects(VectorLayers.libya)) { None }
     else {
-      val tiles =
+      val rasterTiles =
         layers.zip(weights)
           .filter(!_._1.startsWith("v:"))
           .flatMap { case (name, weight) =>
@@ -141,7 +144,12 @@ class DataModel(config: Config) {
               case e: Exception =>
                 None
             }
-          } ++ createTileForVectors(layers, weights, RasterExtent(extent, 256, 256)).toSeq
+          }
+      val vectorTiles =
+        createTileForVectors(layers, weights, RasterExtent(extent, 256, 256)).toSeq
+
+      val tiles =
+        rasterTiles ++ vectorTiles
 
       if(tiles.isEmpty) { None }
       else {

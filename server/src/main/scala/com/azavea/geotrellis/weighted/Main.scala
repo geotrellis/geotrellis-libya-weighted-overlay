@@ -38,10 +38,12 @@ object Main {
       new DataModel(config)
 
     // create and start our service actor
-    val service = system.actorOf(Props(classOf[WeightedServiceActor], staticPath, dataModel), "weighted-service")
+    val service = {
+      val actorProps = Props(classOf[WeightedServiceActor], staticPath, dataModel)
+      system.actorOf(actorProps, "weighted-service")
+    }
 
     // start a new HTTP server on port 8080 with our service actor as the handler
     IO(Http) ! Http.Bind(service, host, port)
   }
-
 }

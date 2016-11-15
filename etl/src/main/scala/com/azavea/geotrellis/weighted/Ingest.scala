@@ -29,6 +29,7 @@ import geotrellis.spark.util.SparkUtils
 import geotrellis.vector.ProjectedExtent
 
 import org.apache.spark.SparkConf
+import org.apache.spark.rdd.RDD
 
 
 object Ingest extends App {
@@ -38,21 +39,25 @@ object Ingest extends App {
     EtlConf(args) foreach { conf =>
       val etl = Etl(conf)
 
+      // Load the source tiles,
+      // but modify so that negative values
+      // or NoData values are set to 0
       val sourceTiles =
         etl.load[ProjectedExtent, Tile]
           .mapValues { tile =>
             tile
               .mapDouble { z =>
-              if(z <= 0.0 || isNoData(z)) { 0.0 }
-              else { z }
-            }
+                if(z <= 0.0 || isNoData(z)) { 0.0 }
+                else { z }
+              }
           }
 
-      val (zoom, tiled) = etl.tile[ProjectedExtent, Tile, SpatialKey](sourceTiles)
+      val (zoom, tiled) =
+        etl.tile[ProjectedExtent, Tile, SpatialKey](sourceTiles)
 
-      val modifiedLayer =
+      val modifiedLayer: TileLayerRDD[SpatialKey] =
         tiled
-          .withContext { rdd =>
+          .withContext { rdd: RDD[(SpatialKey, Tile)] =>
             val (min, max) = rdd.minMaxDouble
             rdd
               .mapValues { tile =>
@@ -61,19 +66,23 @@ object Ingest extends App {
           }
 
       val s = scala.collection.mutable.Set[String]()
-      etl.save[SpatialKey, Tile](LayerId(etl.input.name, zoom), modifiedLayer, { (attributeStore, layerWriter, layerId, layer) =>
-        layerWriter.write(layerId, layer)
 
-        // Save off histogram of the base layer, store in zoom 0's attributes.
-        if(!s.contains(layerId.name)) {
-          val histogram = layer.histogram(512)
-          attributeStore.write(
-            layerId.copy(zoom = 0),
-            "histogram",
-            histogram: Histogram[Double])
-          s += layerId.name
+      etl.save[SpatialKey, Tile](LayerId(etl.input.name, zoom), modifiedLayer,
+        { (attributeStore, layerWriter, layerId, layer: TileLayerRDD[SpatialKey]) =>
+          layerWriter.write(layerId, layer)
+
+          // Save off histogram of the base layer, store in zoom 0's attributes.
+          if(!s.contains(layerId.name)) {
+            val histogram = layer.histogram()
+            attributeStore.write(
+              layerId.copy(zoom = 0),
+              "histogram",
+              histogram
+            )
+            s += layerId.name
+          }
         }
-      })
+      )
     }
   } finally {
     sc.stop()
