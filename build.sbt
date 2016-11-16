@@ -22,7 +22,7 @@ lazy val commonSettings = Seq(
   ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) },
   resolvers += "LocationTech GeoTrellis Releases" at "https://repo.locationtech.org/content/repositories/geotrellis-releases",
   libraryDependencies ++= Seq(
-    "org.apache.spark"  %% "spark-core"    % "1.5.2",
+    "org.apache.spark"  %% "spark-core"    % "2.0.1",
     "io.spray"          %% "spray-routing" % "1.3.3",
     "io.spray"          %% "spray-can"     % "1.3.3",
     "org.apache.hadoop"  % "hadoop-client" % "2.7.1",
