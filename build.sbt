@@ -20,13 +20,13 @@ lazy val commonSettings = Seq(
   licenses := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.html")),
   test in assembly := {},
   ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) },
-  resolvers += Resolver.bintrayRepo("azavea", "geotrellis"),
+  resolvers += "LocationTech GeoTrellis Releases" at "https://repo.locationtech.org/content/repositories/geotrellis-releases",
   libraryDependencies ++= Seq(
     "org.apache.spark"  %% "spark-core"    % "1.5.2",
     "io.spray"          %% "spray-routing" % "1.3.3",
     "io.spray"          %% "spray-can"     % "1.3.3",
     "org.apache.hadoop"  % "hadoop-client" % "2.7.1",
-    "com.azavea.geotrellis" %% "geotrellis-spark" % Version.gtVersion,
+    "org.locationtech.geotrellis" %% "geotrellis-spark" % Version.gtVersion,
     "com.google.guava" % "guava" % "16.0.1"
   ) map  { _ exclude("com.google.guava", "guava") },
   assemblyMergeStrategy in assembly := {

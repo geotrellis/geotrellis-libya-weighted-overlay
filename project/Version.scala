@@ -1,4 +1,3 @@
 object Version {
-  // Need to change this to 1.0 after release
-  val gtVersion = "1.0.0-869ef08"
+  val gtVersion = "1.0.0-RC1"
 }
