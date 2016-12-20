@@ -44,26 +44,26 @@ object Ingest extends App {
       // or NoData values are set to 0
       val sourceTiles =
         etl.load[ProjectedExtent, Tile]
-          .mapValues { tile =>
-            tile
-              .mapDouble { z =>
-                if(z <= 0.0 || isNoData(z)) { 0.0 }
-                else { z }
-              }
-          }
+          // .mapValues { tile =>
+          //   tile
+          //     .mapDouble { z =>
+          //       if(z <= 0.0 || isNoData(z)) { 0.0 }
+          //       else { z }
+          //     }
+          // }
 
       val (zoom, tiled) =
         etl.tile[ProjectedExtent, Tile, SpatialKey](sourceTiles)
 
       val modifiedLayer: TileLayerRDD[SpatialKey] =
         tiled
-          .withContext { rdd: RDD[(SpatialKey, Tile)] =>
-            val (min, max) = rdd.minMaxDouble
-            rdd
-              .mapValues { tile =>
-                tile.normalize(min, max, 0.0, 100.0)
-              }
-          }
+          // .withContext { rdd: RDD[(SpatialKey, Tile)] =>
+          //   val (min, max) = rdd.minMaxDouble
+          //   rdd
+          //     .mapValues { tile =>
+          //       tile.normalize(min, max, 0.0, 100.0)
+          //     }
+          // }
 
       val s = scala.collection.mutable.Set[String]()
 

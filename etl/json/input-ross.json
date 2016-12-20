@@ -1,0 +1,74 @@
+[
+  {
+    "name": "airstrikes",
+    "format": "geotiff",
+    "backend": {
+      "type": "hadoop",
+      "path": "file:///Users/rob/proj/rb/libya-weighted-overlay/data/Ross_Libya_Rasters/Airstrike_Final.tif"
+    },
+    "cache": "NONE"
+  },
+  {
+    "name": "conflict",
+    "format": "geotiff",
+    "backend": {
+      "type": "hadoop",
+      "path": "file:///Users/rob/proj/rb/libya-weighted-overlay/data/Ross_Libya_Rasters/Conflict_Final.tif"
+    },
+    "cache": "NONE"
+  },
+  {
+    "name": "drugs",
+    "format": "geotiff",
+    "backend": {
+      "type": "hadoop",
+      "path": "file:///Users/rob/proj/rb/libya-weighted-overlay/data/Ross_Libya_Rasters/Drugs_Final.tif"
+    },
+    "cache": "NONE"
+  },
+  {
+    "name": "allies",
+    "format": "geotiff",
+    "backend": {
+      "type": "hadoop",
+      "path": "file:///Users/rob/proj/rb/libya-weighted-overlay/data/Ross_Libya_Rasters/IS_Allies_Final.tif"
+    },
+    "cache": "NONE"
+  },
+  {
+    "name": "pipeline",
+    "format": "geotiff",
+    "backend": {
+      "type": "hadoop",
+      "path": "file:///Users/rob/proj/rb/libya-weighted-overlay/data/Ross_Libya_Rasters/Oil_Pipeline_Final.tif"
+    },
+    "cache": "NONE"
+  },
+  {
+    "name": "people",
+    "format": "geotiff",
+    "backend": {
+      "type": "hadoop",
+      "path": "file:///Users/rob/proj/rb/libya-weighted-overlay/data/Ross_Libya_Rasters/People_Final.tif"
+    },
+    "cache": "NONE"
+  },
+  {
+    "name": "population",
+    "format": "geotiff",
+    "backend": {
+      "type": "hadoop",
+      "path": "file:///Users/rob/proj/rb/libya-weighted-overlay/data/Ross_Libya_Rasters/Population_Centers_Final.tif"
+    },
+    "cache": "NONE"
+  },
+  {
+    "name": "weapons",
+    "format": "geotiff",
+    "backend": {
+      "type": "hadoop",
+      "path": "file:///Users/rob/proj/rb/libya-weighted-overlay/data/Ross_Libya_Rasters/Weapons_Final.tif"
+    },
+    "cache": "NONE"
+  }
+]

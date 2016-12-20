@@ -120,8 +120,6 @@ var weightedOverlay = (function() {
         $( this ).prev('.weight').text( pn + ui.value );
         layer.weight = ui.value;
         update();
-        summary.setLayerWeight(layer.name,layer.weight);
-        summary.update(false);
       }
     });
     div.find( '.weight' ).text( (layer.weight > 0 ? "+" : "") + layer.weight );

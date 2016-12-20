@@ -11,6 +11,5 @@
   },
   "resampleMethod": "bilinear",
   "layoutScheme": "zoomed",
-  "cellType": "float32raw",
   "crs": "EPSG:3857"
 }

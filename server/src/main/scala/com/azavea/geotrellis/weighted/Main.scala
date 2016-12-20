@@ -18,32 +18,34 @@ package com.azavea.geotrellis.weighted
 
 import akka.actor.ActorSystem
 import akka.actor.Props
+import akka.event.Logging
 import akka.io.IO
+import akka.http.scaladsl.Http
+import akka.stream.ActorMaterializer
 import com.typesafe.config.ConfigFactory
-import spray.can.Http
 
+object AkkaSystem {
+  implicit val system = ActorSystem("libya-system")
+  implicit val materializer = ActorMaterializer()
 
-object Main {
+  trait LoggerExecutor {
+    protected implicit val log = Logging(system, "app")
+  }
+}
+
+object Main extends Router {
 
   val config = ConfigFactory.load()
   val staticPath = config.getString("geotrellis.server.static-path")
   val port = config.getInt("geotrellis.port")
   val host = config.getString("geotrellis.hostname")
 
+  val dataModel =
+    new DataModel(config)
+
   def main(args: Array[String]): Unit = {
+    import AkkaSystem._
 
-    implicit val system = ActorSystem("weighted-demo")
-
-    val dataModel =
-      new DataModel(config)
-
-    // create and start our service actor
-    val service = {
-      val actorProps = Props(classOf[WeightedServiceActor], staticPath, dataModel)
-      system.actorOf(actorProps, "weighted-service")
-    }
-
-    // start a new HTTP server on port 8080 with our service actor as the handler
-    IO(Http) ! Http.Bind(service, host, port)
+    Http().bindAndHandle(routes, host, port)
   }
 }

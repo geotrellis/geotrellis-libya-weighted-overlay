@@ -3,6 +3,7 @@ package com.azavea.geotrellis.weighted
 import com.typesafe.config.Config
 import geotrellis.proj4.{LatLng, WebMercator}
 import geotrellis.raster._
+import geotrellis.raster.mapalgebra.local._
 import geotrellis.raster.resample.Bilinear
 import geotrellis.spark._
 import geotrellis.spark.io._
@@ -11,6 +12,18 @@ import geotrellis.spark.io.file._
 import geotrellis.vector._
 
 class DataModel(config: Config) {
+  object CustomAdd extends LocalTileBinaryOp {
+    def combine(z1: Int, z2: Int) =
+      if (isNoData(z1) && isNoData(z2)) 0
+      else
+        (if(isNoData(z1)) 0 else z1) + (if(isNoData(z2)) 0 else z2)
+
+    def combine(z1: Double, z2: Double) =
+      if (isNoData(z1) && isNoData(z2)) 0.0
+      else
+        (if(isNoData(z1)) 0 else z1) + (if(isNoData(z2)) 0 else z2)
+  }
+
   val (collectionReader, tileReader, attributeStore) = {
     val path = config.getString("file.path")
     val attributeStore = FileAttributeStore(path)
@@ -59,6 +72,7 @@ class DataModel(config: Config) {
             .stitch
             .resample(breaksTileRasterExtent)
             .tile
+            .mapDouble { z => if(z <= 0.0) Double.NaN else z }
 
         (name, tile)
       }
@@ -120,10 +134,8 @@ class DataModel(config: Config) {
     val vectorTiles =
       createTileForVectors(layers, weights, breaksTileRasterExtent).toSeq
 
-    (rasterTiles ++ vectorTiles)
-      .localAdd
+    CustomAdd(rasterTiles ++ vectorTiles)
       .convert(DoubleConstantNoDataCellType)
-      .mapDouble { z => if(z == 0.0) { Double.NaN } else z }
       .mask(breaksTileRasterExtent.extent, VectorLayers.libya)
       .histogramDouble
       .quantileBreaks(numBreaks)
@@ -154,10 +166,8 @@ class DataModel(config: Config) {
       if(tiles.isEmpty) { None }
       else {
         Some(
-          tiles
-            .localAdd
+          CustomAdd(tiles)
             .convert(DoubleConstantNoDataCellType)
-            .mapDouble { z => if(z == 0.0) { Double.NaN } else z }
             .mask(extent, VectorLayers.libya)
         )
       }
