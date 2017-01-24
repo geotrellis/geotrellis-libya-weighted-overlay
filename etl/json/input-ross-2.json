@@ -1,0 +1,83 @@
+[
+  {
+    "name": "airstrikes",
+    "format": "geotiff",
+    "backend": {
+      "type": "hadoop",
+      "path": "file:///Users/rob/proj/rb/libya-weighted-overlay/data/Ross_Libya_Rasters-3B/Reclass_airs1_Clip.tif"
+    },
+    "cache": "NONE"
+  },
+  {
+    "name": "conflict",
+    "format": "geotiff",
+    "backend": {
+      "type": "hadoop",
+      "path": "file:///Users/rob/proj/rb/libya-weighted-overlay/data/Ross_Libya_Rasters-3B/Reclass_accl1_Clip.tif"
+    },
+    "cache": "NONE"
+  },
+  {
+    "name": "drugs",
+    "format": "geotiff",
+    "backend": {
+      "type": "hadoop",
+      "path": "file:///Users/rob/proj/rb/libya-weighted-overlay/data/Ross_Libya_Rasters-3B/Reclass_drug11_Clip.tif"
+    },
+    "cache": "NONE"
+  },
+  {
+    "name": "allies",
+    "format": "geotiff",
+    "backend": {
+      "type": "hadoop",
+      "path": "file:///Users/rob/proj/rb/libya-weighted-overlay/data/Ross_Libya_Rasters-3B/Reclass_airs1_Clip.tif"
+    },
+    "cache": "NONE"
+  },
+  {
+    "name": "pipeline",
+    "format": "geotiff",
+    "backend": {
+      "type": "hadoop",
+      "path": "file:///Users/rob/proj/rb/libya-weighted-overlay/data/Ross_Libya_Rasters-3B/Reclass_oilp11_Clip.tif"
+    },
+    "cache": "NONE"
+  },
+  {
+    "name": "refineries",
+    "format": "geotiff",
+    "backend": {
+      "type": "hadoop",
+      "path": "file:///Users/rob/proj/rb/libya-weighted-overlay/data/Ross_Libya_Rasters-3B/Reclass_oilr11_Clip.tif"
+    },
+    "cache": "NONE"
+  },
+  {
+    "name": "people",
+    "format": "geotiff",
+    "backend": {
+      "type": "hadoop",
+      "path": "file:///Users/rob/proj/rb/libya-weighted-overlay/data/Ross_Libya_Rasters-3B/Reclass_peop11_Clip.tif"
+    },
+    "cache": "NONE"
+  },
+  {
+    "name": "population",
+    "format": "geotiff",
+    "backend": {
+      "type": "hadoop",
+      "path": "file:///Users/rob/proj/rb/libya-weighted-overlay/data/Ross_Libya_Rasters-3B/CellSta_Recl12_Clip.tif"
+    },
+    "cache": "NONE"
+  },
+  {
+    "name": "weapons",
+    "format": "geotiff",
+    "backend": {
+      "type": "hadoop",
+      "path": "file:///Users/rob/proj/rb/libya-weighted-overlay/data/Ross_Libya_Rasters-3B/Reclass_weap31_Clip.tif"
+    },
+    "cache": "NONE"
+  }
+]

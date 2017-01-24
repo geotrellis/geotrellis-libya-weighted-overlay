@@ -101,7 +101,7 @@ class DataModel(config: Config) {
         Some(tileReader.reader[SpatialKey, Tile](LayerId(layer, zoom)).read(SpatialKey(x, y)))
       }
     } catch {
-      case e: TileNotFoundError =>
+      case e: ValueNotFoundError =>
         None
     }
 

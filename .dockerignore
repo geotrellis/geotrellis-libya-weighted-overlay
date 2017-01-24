@@ -1,0 +1,12 @@
+etl/target
+data/HumanGeo_Libya_Rasters/
+data/Ross_Libya_Rasters*
+data/*.geojson
+data/*.qml
+data/Acled/
+data/Airstrikes
+data/Allies
+data/Libya_shape
+data/Oil_Pipeline
+data/Pop_centers
+data/Routes

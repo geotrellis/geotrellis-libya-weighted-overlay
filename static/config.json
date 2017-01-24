@@ -3,7 +3,7 @@
     "weightedOverlay": {
         "numBreaks" : "10",
         "opacity"   : "0.75",
-        "ramp"      : "yellow-to-red-heatmap",
+        "ramp"      : "blue-to-yellow-to-red-heatmap",
         "layers" : [ { "name" : "conflict",
                        "weight" : "1",
                        "display" : "Conflict Areas" },
@@ -25,12 +25,13 @@
                      { "name" : "drugs",
                        "weight" : "1",
                        "display" : "Drug Routes" },
-                     { "name" : "v:refineries:60",
+                     { "name" : "refineries",
                        "weight" : "1",
                        "display" : "Oil Refineries" },
                      { "name" : "allies",
                        "weight" : "1",
                        "display" : "ISIL Allies" }
                    ]
+
     }
 }
