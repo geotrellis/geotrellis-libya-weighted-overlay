@@ -44,19 +44,21 @@ object Ingest extends App {
       // or NoData values are set to 0
       val sourceTiles =
         etl.load[ProjectedExtent, Tile]
-          // .mapValues { tile =>
-          //   tile
-          //     .mapDouble { z =>
-          //       if(z <= 0.0 || isNoData(z)) { 0.0 }
-          //       else { z }
-          //     }
-          // }
+          .mapValues { tile =>
+            tile
+              .delayedConversion(ShortConstantNoDataCellType)
+              .map { z =>
+                if(2 <= z || z < 254) { z }
+                else { NODATA }
+              }
+          }
 
       val (zoom, tiled) =
         etl.tile[ProjectedExtent, Tile, SpatialKey](sourceTiles)
 
       val modifiedLayer: TileLayerRDD[SpatialKey] =
         tiled
+          // .convert()
           // .withContext { rdd: RDD[(SpatialKey, Tile)] =>
           //   val (min, max) = rdd.minMaxDouble
           //   rdd

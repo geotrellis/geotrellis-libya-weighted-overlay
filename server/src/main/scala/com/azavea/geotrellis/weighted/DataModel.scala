@@ -15,13 +15,15 @@ class DataModel(config: Config) {
   object CustomAdd extends LocalTileBinaryOp {
     def combine(z1: Int, z2: Int) =
       if (isNoData(z1) && isNoData(z2)) 0
-      else
+      else {
         (if(isNoData(z1)) 0 else z1) + (if(isNoData(z2)) 0 else z2)
+      }
 
     def combine(z1: Double, z2: Double) =
       if (isNoData(z1) && isNoData(z2)) 0.0
-      else
+      else {
         (if(isNoData(z1)) 0 else z1) + (if(isNoData(z2)) 0 else z2)
+      }
   }
 
   val (collectionReader, tileReader, attributeStore) = {
@@ -72,7 +74,7 @@ class DataModel(config: Config) {
             .stitch
             .resample(breaksTileRasterExtent)
             .tile
-            .mapDouble { z => if(z <= 0.0) Double.NaN else z }
+            .mapDouble { z => if(z <= 1.0) Double.NaN else z }
 
         (name, tile)
       }
@@ -124,7 +126,7 @@ class DataModel(config: Config) {
     }
   }
 
-  def getBreaks(layers: Seq[String], weights: Seq[Double], numBreaks: Int): Array[Double] = {
+  def getBreaks(layers: Seq[String], weights: Seq[Double], numBreaks: Int): Array[Int] = {
     val rasterTiles =
       layers.zip(weights)
         .filter(!_._1.startsWith("v:"))
@@ -137,11 +139,11 @@ class DataModel(config: Config) {
     CustomAdd(rasterTiles ++ vectorTiles)
       .convert(DoubleConstantNoDataCellType)
       .mask(breaksTileRasterExtent.extent, VectorLayers.libya)
-      .histogramDouble
+      .histogram
       .quantileBreaks(numBreaks)
   }
 
-  def suitabilityTile(layers: Seq[String], weights: Seq[Double], z: Int, x: Int, y: Int): Option[Tile] = {
+  def suitabilityTile(layers: Seq[String], weights: Seq[Double], z: Int, x: Int, y: Int, fill: Boolean = false): Option[Tile] = {
     val extent = getExtent(z, x, y)
 
     if(!extent.intersects(VectorLayers.libya)) { None }
@@ -151,12 +153,22 @@ class DataModel(config: Config) {
           .filter(!_._1.startsWith("v:"))
           .flatMap { case (name, weight) =>
             try {
-              readTile(name, z, x, y).map(_ * weight)
+              readTile(name, z, x, y)
+                .map { tile => //tile * weight }
+                  if(fill) {
+                    tile * weight
+                  } else {
+                    tile.mapDouble { z =>
+                      if(z == 1) Double.NaN else { z * weight}
+                    }
+                  }
+                }
             } catch {
               case e: Exception =>
                 None
             }
           }
+
       val vectorTiles =
         createTileForVectors(layers, weights, RasterExtent(extent, 256, 256)).toSeq
 
@@ -167,7 +179,7 @@ class DataModel(config: Config) {
       else {
         Some(
           CustomAdd(tiles)
-            .convert(DoubleConstantNoDataCellType)
+            .convert(ShortUserDefinedNoDataCellType(0))
             .mask(extent, VectorLayers.libya)
         )
       }

@@ -1,5 +1,5 @@
 IMG  := quay.io/lossyrob/geotrellis-libya-weighted-overlay-example
-TAG  := "ross5"
+TAG  := "ross6"
 
 ETL_ASSEMBLY_JAR := etl/target/scala-2.11/etl-assembly-0.1.0.jar
 SERVER_ASSEMBLY_JAR := server/target/scala-2.11/libya-weighted-overlay-example-server-0.1.0.jar
@@ -23,7 +23,7 @@ ingest:
 		--driver-memory 2G \
 		etl/target/scala-2.11/etl-assembly-0.1.0.jar \
 		--backend-profiles "file://${PWD}/etl/json/backend-profiles.json" \
-		--input "file://${PWD}/etl/json/input-ross-2.json" \
+		--input "file://${PWD}/etl/json/input-ross-3.json" \
 		--output "file://${PWD}/etl/json/output.json"
 
 assembly: ${SERVER_ASSEMBLY_JAR}

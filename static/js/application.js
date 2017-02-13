@@ -51,7 +51,7 @@ var weightedOverlay = (function() {
   var WOLayer = null;
   var opacity = 0.5;
   var colorRamp = "blue-to-yellow-to-red-heatmap";
-  var numBreaks = 10;
+  var numBreaks = 20;
 
   getLayers   = function() {
     var notZeros = _.filter(layers, function(l) { return l.weight != 0 });

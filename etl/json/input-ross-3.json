@@ -1,0 +1,56 @@
+[
+  {
+    "name": "airstrikes",
+    "format": "geotiff",
+    "backend": {
+      "type": "hadoop",
+      "path": "file:///Users/rob/Downloads/final_round_4/airstrikes5.tif"
+    },
+    "cache": "NONE"
+  },
+  {
+    "name": "conflict",
+    "format": "geotiff",
+    "backend": {
+      "type": "hadoop",
+      "path": "file:///Users/rob/Downloads/final_round_4/acled5.tif"
+    },
+    "cache": "NONE"
+  },
+  {
+    "name": "allies",
+    "format": "geotiff",
+    "backend": {
+      "type": "hadoop",
+      "path": "file:///Users/rob/Downloads/final_round_4/allies5.tif"
+    },
+    "cache": "NONE"
+  },
+  {
+    "name": "pipeline",
+    "format": "geotiff",
+    "backend": {
+      "type": "hadoop",
+      "path": "file:///Users/rob/Downloads/final_round_4/oil_pipeline5.tif"
+    },
+    "cache": "NONE"
+  },
+  {
+    "name": "refineries",
+    "format": "geotiff",
+    "backend": {
+      "type": "hadoop",
+      "path": "file:///Users/rob/Downloads/final_round_4/oil_refine5.tif"
+    },
+    "cache": "NONE"
+  },
+  {
+    "name": "population",
+    "format": "geotiff",
+    "backend": {
+      "type": "hadoop",
+      "path": "file:///Users/rob/Downloads/final_round_4/Population_centers5.tif"
+    },
+    "cache": "NONE"
+  }
+]

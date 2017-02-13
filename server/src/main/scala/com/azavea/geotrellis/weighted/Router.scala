@@ -86,13 +86,15 @@ trait Router extends Directives with AkkaSystem.LoggerExecutor {
           'layers,
           'weights,
           'colorRamp ? "blue-to-red",
-          'breaks
-        ) { (layersParam, weightsParam, colorRamp, classBreaksParam) =>
+          'breaks,
+          'fill ? "false"
+        ) { (layersParam, weightsParam, colorRamp, classBreaksParam, fillParam) =>
           val key = SpatialKey(x, y)
           val layers = layersParam.split(",")
           val weights = weightsParam.split(",").map(_.toDouble)
+          val fill = fillParam == "true"
 
-          val classBreaks = classBreaksParam.split(",").map(_.toDouble)
+          val classBreaks = classBreaksParam.split(",").map(_.toInt)
           val ramp = ColorRampMap.getOrElse(colorRamp, ColorRamps.BlueToRed)
           val colorMap =
             ramp.toColorMap(classBreaks, ColorMap.Options(fallbackColor = ramp.colors.last))
@@ -100,7 +102,7 @@ trait Router extends Directives with AkkaSystem.LoggerExecutor {
           complete {
             Future {
               dataModel
-                .suitabilityTile(layers, weights, zoom, x, y)
+                .suitabilityTile(layers, weights, zoom, x, y, fill)
                 .map { tile =>
                   val rendered =
                     tile
