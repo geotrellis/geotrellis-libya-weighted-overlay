@@ -4,7 +4,7 @@
     "format": "geotiff",
     "backend": {
       "type": "hadoop",
-      "path": "file:///Users/rob/proj/rb/libya-weighted-overlay/data/HumanGeo_Libya_Rasters/Airstrike_Final.tif"
+      "path": "file:/Users/eugene/proj/geotrellis-libya-weighted-overlay/data/rasters/Air strikes.tif"
     },
     "cache": "NONE"
   },
@@ -13,16 +13,7 @@
     "format": "geotiff",
     "backend": {
       "type": "hadoop",
-      "path": "file:///Users/rob/proj/rb/libya-weighted-overlay/data/HumanGeo_Libya_Rasters/Conflict_Final.tif"
-    },
-    "cache": "NONE"
-  },
-  {
-    "name": "drugs",
-    "format": "geotiff",
-    "backend": {
-      "type": "hadoop",
-      "path": "file:///Users/rob/proj/rb/libya-weighted-overlay/data/HumanGeo_Libya_Rasters/Drugs_Final.tif"
+      "path": "file:/Users/eugene/proj/geotrellis-libya-weighted-overlay/data/rasters/Conflict Areas.tif"
     },
     "cache": "NONE"
   },
@@ -31,7 +22,7 @@
     "format": "geotiff",
     "backend": {
       "type": "hadoop",
-      "path": "file:///Users/rob/proj/rb/libya-weighted-overlay/data/HumanGeo_Libya_Rasters/IS_Allies_Final.tif"
+      "path": "file:/Users/eugene/proj/geotrellis-libya-weighted-overlay/data/rasters/ISIL Allies.tif"
     },
     "cache": "NONE"
   },
@@ -40,16 +31,16 @@
     "format": "geotiff",
     "backend": {
       "type": "hadoop",
-      "path": "file:///Users/rob/proj/rb/libya-weighted-overlay/data/HumanGeo_Libya_Rasters/Oil_Pipeline_Final.tif"
+      "path": "file:/Users/eugene/proj/geotrellis-libya-weighted-overlay/data/rasters/Distance to Oil Pipeline.tif"
     },
     "cache": "NONE"
   },
   {
-    "name": "people",
+    "name": "refineries",
     "format": "geotiff",
     "backend": {
       "type": "hadoop",
-      "path": "file:///Users/rob/proj/rb/libya-weighted-overlay/data/HumanGeo_Libya_Rasters/People_Final.tif"
+      "path": "file:/Users/eugene/proj/geotrellis-libya-weighted-overlay/data/rasters/Oil Refinries.tif"
     },
     "cache": "NONE"
   },
@@ -58,7 +49,7 @@
     "format": "geotiff",
     "backend": {
       "type": "hadoop",
-      "path": "file:///Users/rob/proj/rb/libya-weighted-overlay/data/HumanGeo_Libya_Rasters/Population_Centers_Final.tif"
+      "path": "file:/Users/eugene/proj/geotrellis-libya-weighted-overlay/data/rasters/Population Centers.tif"
     },
     "cache": "NONE"
   },
@@ -67,7 +58,16 @@
     "format": "geotiff",
     "backend": {
       "type": "hadoop",
-      "path": "file:///Users/rob/proj/rb/libya-weighted-overlay/data/HumanGeo_Libya_Rasters/Weapons_Final.tif"
+      "path": "file:/Users/eugene/proj/geotrellis-libya-weighted-overlay/data/rasters/Weapons Routes.tif"
+    },
+    "cache": "NONE"
+  },
+  {
+    "name": "people",
+    "format": "geotiff",
+    "backend": {
+      "type": "hadoop",
+      "path": "file:/Users/eugene/proj/geotrellis-libya-weighted-overlay/data/rasters/People Routes.tif"
     },
     "cache": "NONE"
   }

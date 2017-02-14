@@ -39,6 +39,11 @@ object Population {
   }
 }
 
+/**
+  * Converts GeoJSON encoded geometries to raster tiles in memory by buffering the lines.
+  * Not used in the application because a simple buffer does not provide sufficient visual information.
+  * Remains as an example and base for future features based on similar concepts.
+  */
 object VectorLayers {
   val AirStrikeName = """airstrikes:([\d]+)""".r
   val PopulationName = """population:([\d]+)""".r
@@ -145,11 +150,11 @@ object VectorLayers {
     }
 
   def read(fname: String): String =
-    scala.io.Source.fromFile(s"/opt/data/geojson/$fname", "UTF-8")
+    scala.io.Source.fromFile(s"${Main.geoJsonPath}/$fname", "UTF-8")
       .getLines
       .mkString
 
-  val libya: MultiPolygon =
+  lazy val libya: MultiPolygon =
     read("Libya_shape.geojson")
       .extractGeometries[MultiPolygon]
       .head
@@ -207,11 +212,4 @@ object VectorLayers {
 
   lazy val isAlliesGeom =
     MultiPoint(isAllies)
-
-  // This is what is rasterized in the pipeline layer
-  // val oilPipelines =
-  //   read("Oil_Pipeline.geojson")
-  //     .extractGeometries[MultiLine]
-  //     .map(_.reproject(LatLng, WebMercator))
-  // assert(oilPipelines.length > 0)
 }

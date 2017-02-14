@@ -1,7 +1,7 @@
 {
   "backend": {
     "type": "file",
-    "path": "/Users/rob/proj/rb/libya-weighted-overlay/data/catalog"
+    "path": "/Users/eugene/proj/geotrellis-libya-weighted-overlay/data/catalog"
   },
   "reprojectMethod": "buffered",
   "pyramid": true,

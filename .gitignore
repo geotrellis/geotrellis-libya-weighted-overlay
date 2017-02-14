@@ -28,8 +28,6 @@ data/Libya_shape
 data/Oil_Pipeline
 data/Pop_centers
 data/Routes
-data/catalog/pipeline
-data/catalog/conflict
-data/catalog/attributes
+data/catalog/*
 deployment/*.tfstate
 deployment/*.tfstate.backup

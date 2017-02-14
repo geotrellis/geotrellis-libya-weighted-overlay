@@ -37,6 +37,7 @@ object Main extends Router {
 
   val config = ConfigFactory.load()
   val staticPath = config.getString("geotrellis.server.static-path")
+  val geoJsonPath = config.getString("geotrellis.server.geojson-path")
   val port = config.getInt("geotrellis.port")
   val host = config.getString("geotrellis.hostname")
 
