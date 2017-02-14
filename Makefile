@@ -1,5 +1,5 @@
 IMG  := quay.io/lossyrob/geotrellis-libya-weighted-overlay-example
-TAG  := "ross6"
+TAG  := "latest"
 
 ETL_ASSEMBLY_JAR := etl/target/scala-2.11/etl-assembly-0.1.0.jar
 SERVER_ASSEMBLY_JAR := server/target/scala-2.11/libya-weighted-overlay-example-server-0.1.0.jar
