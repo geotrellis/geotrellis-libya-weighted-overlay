@@ -19,7 +19,6 @@ TAGS
 data/HumanGeo_Libya_Rasters/
 data/Ross_Libya_Rasters*
 data/geojson
-data/*.geojson
 data/*.qml
 data/Acled/
 data/Airstrikes
