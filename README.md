@@ -12,7 +12,7 @@ These pyramids are used by the tile server to provide the base tiles for weighte
 The ingest process is configured by `etc/json/input-template.json` and `etl/json/output-template.json`.
 The templates allow to generate URIs relative to the project checkout directory.
 
-The ingest is based on GeoTrellis ETL utility. Full documetnation can be found here.
+The ingest is based on GeoTrellis ETL utility. Full documetnation can be found [here](http://geotrellis.readthedocs.io/en/latest/tutorials/etl-tutorial/).
 Included sample configuration outputs the pyramid to local file system. However other options, such as S3, are supported.
 For raster sets too large to be processed on a computer this process may be run on a cluster.
 
