@@ -46,9 +46,10 @@ object Ingest extends App {
         etl.load[ProjectedExtent, Tile]
           .mapValues { tile =>
             tile
-              .mapDouble { z =>
-                if(z <= 0.0 || isNoData(z)) { 0.0 }
-                else { z }
+              .delayedConversion(ShortConstantNoDataCellType)
+              .map { z =>
+                if(2 <= z || z < 254) { z }
+                else { NODATA }
               }
           }
 
@@ -57,13 +58,14 @@ object Ingest extends App {
 
       val modifiedLayer: TileLayerRDD[SpatialKey] =
         tiled
-          .withContext { rdd: RDD[(SpatialKey, Tile)] =>
-            val (min, max) = rdd.minMaxDouble
-            rdd
-              .mapValues { tile =>
-                tile.normalize(min, max, 0.0, 100.0)
-              }
-          }
+          // .convert()
+          // .withContext { rdd: RDD[(SpatialKey, Tile)] =>
+          //   val (min, max) = rdd.minMaxDouble
+          //   rdd
+          //     .mapValues { tile =>
+          //       tile.normalize(min, max, 0.0, 100.0)
+          //     }
+          // }
 
       val s = scala.collection.mutable.Set[String]()
 

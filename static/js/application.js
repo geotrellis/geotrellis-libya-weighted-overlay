@@ -5,6 +5,10 @@ var getLayer = function(url,attrib) {
 };
 
 var Layers = {
+  osm: {
+    DE: 'http://{s}.tile.openstreetmap.de/tiles/osmde/{z}/{x}/{y}.png',
+    attrib: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+  },
   stamen: {
     toner:  'http://{s}.tile.stamen.com/toner/{z}/{x}/{y}.png',
     terrain: 'http://{s}.tile.stamen.com/terrain/{z}/{x}/{y}.png',
@@ -19,13 +23,13 @@ var Layers = {
 };
 
 var map = (function() {
-  var selected = getLayer(Layers.mapBox.azavea,Layers.mapBox.attrib);
+  var selected = getLayer(Layers.osm.DE, Layers.osm.attrib);
   var baseLayers = {
     "Default" : selected,
     "World Light" : getLayer(Layers.mapBox.worldLight,Layers.mapBox.attrib),
     "Terrain" : getLayer(Layers.stamen.terrain,Layers.stamen.attrib),
     "Watercolor" : getLayer(Layers.stamen.watercolor,Layers.stamen.attrib),
-    "Toner" : getLayer(Layers.stamen.toner,Layers.stamen.attrib),
+    "Toner" : getLayer(Layers.stamen.toner,Layers.stamen.attrib)
   };
 
   var m = L.map('map');
@@ -46,8 +50,8 @@ var weightedOverlay = (function() {
   var breaks = null;
   var WOLayer = null;
   var opacity = 0.5;
-  var colorRamp = "blue-to-red";
-  var numBreaks = 10;
+  var colorRamp = "blue-to-yellow-to-red-heatmap";
+  var numBreaks = 20;
 
   getLayers   = function() {
     var notZeros = _.filter(layers, function(l) { return l.weight != 0 });
@@ -120,8 +124,6 @@ var weightedOverlay = (function() {
         $( this ).prev('.weight').text( pn + ui.value );
         layer.weight = ui.value;
         update();
-        summary.setLayerWeight(layer.name,layer.weight);
-        summary.update(false);
       }
     });
     div.find( '.weight' ).text( (layer.weight > 0 ? "+" : "") + layer.weight );

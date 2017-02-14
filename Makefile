@@ -14,11 +14,17 @@ rwildcard=$(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) $(filter $(subst 
 ${SERVER_ASSEMBLY_JAR}: $(call rwildcard, server, *.scala) build.sbt
 	sbt "project server" assembly
 
-ingest:
-	rm -r data/catalog/attributes || true
-	rm -r data/catalog/conflict || true
-	rm -r data/catalog/pipeline || true
+${ETL_ASSEMBLY_JAR}: $(call rwildcard, etl, *.scala) build.sbt
 	sbt "project etl" assembly
+
+etl/json/input.json: etl/json/input-template.json
+	@scripts/template.sh etl/json/input.json etl/json/input-template.json
+
+etl/json/output.json: etl/json/output-template.json
+	@scripts/template.sh etl/json/output.json etl/json/output-template.json
+
+ingest: ${ETL_ASSEMBLY_JAR} etl/json/input.json etl/json/output.json
+	rm -r data/catalog/ || true
 	spark-submit \
 		--class com.azavea.geotrellis.weighted.Ingest \
 		--master local[*] \
@@ -30,16 +36,19 @@ ingest:
 
 assembly: ${SERVER_ASSEMBLY_JAR}
 
-build: Dockerfile assembly
-	docker build -t ${IMG}:${TAG} .
+docker-build: Dockerfile ${SERVER_ASSEMBLY_JAR}
+	docker build --no-cache -t ${IMG}:${TAG} .
 
-run:
+docker-run:
 	docker run -it -p 8777:8777 ${IMG}:${TAG}
 
-publish: build
+run:
+	sbt "project server" run
+
+docker-publish: docker-build
 	docker push ${IMG}:${TAG}
 
-test: build
+test: docker-build
 	./sbt test
 	docker-compose up -d
 	sleep 2 && curl localhost:7070/system/status

@@ -1,11 +1,11 @@
 # No spaces in STACK_NAME
-export STACK_NAME := DEV
+export STACK_NAME := ROSS
 export EC2_KEY := geotrellis-cluster
 export AWS_DEFAULT_REGION := us-east-1
 export SUBNET_ID := subnet-c5fefdb1
 
 # Docker image of benchmarking service
-export SERVICE_TAG := latest
+export SERVICE_TAG := ross6
 export SERVICE_IMG := quay.io/lossyrob/geotrellis-libya-weighted-overlay-example
 
 deploy:
@@ -14,7 +14,7 @@ deploy:
 -var 'stack_name=${STACK_NAME}' \
 -var 'ec2_key=${EC2_KEY}' \
 -var 'subnet_id=${SUBNET_ID}' \
--var 'service_image=${SERVICE_IMG}'
+-var 'service_image=${SERVICE_IMG}:${SERVICE_TAG}'
 
 destroy:
 	terraform destroy -force \

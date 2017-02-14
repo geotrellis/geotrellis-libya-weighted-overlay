@@ -24,7 +24,7 @@ variable "desired_instance_count" {
 
 # TODO: make this a dynamic lookup
 variable "aws_ecs_ami" {
-  default = "ami-6bb2d67c"
+  default = "ami-eca289fb"
 }
 
 variable "ecs_instance_type" {

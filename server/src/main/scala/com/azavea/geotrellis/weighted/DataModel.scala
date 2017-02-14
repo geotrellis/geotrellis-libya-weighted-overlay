@@ -3,6 +3,7 @@ package com.azavea.geotrellis.weighted
 import com.typesafe.config.Config
 import geotrellis.proj4.{LatLng, WebMercator}
 import geotrellis.raster._
+import geotrellis.raster.mapalgebra.local._
 import geotrellis.raster.resample.Bilinear
 import geotrellis.spark._
 import geotrellis.spark.io._
@@ -11,6 +12,20 @@ import geotrellis.spark.io.file._
 import geotrellis.vector._
 
 class DataModel(config: Config) {
+  object CustomAdd extends LocalTileBinaryOp {
+    def combine(z1: Int, z2: Int) =
+      if (isNoData(z1) && isNoData(z2)) 0
+      else {
+        (if(isNoData(z1)) 0 else z1) + (if(isNoData(z2)) 0 else z2)
+      }
+
+    def combine(z1: Double, z2: Double) =
+      if (isNoData(z1) && isNoData(z2)) 0.0
+      else {
+        (if(isNoData(z1)) 0 else z1) + (if(isNoData(z2)) 0 else z2)
+      }
+  }
+
   val (collectionReader, tileReader, attributeStore) = {
     val path = config.getString("file.path")
     val attributeStore = FileAttributeStore(path)
@@ -59,6 +74,7 @@ class DataModel(config: Config) {
             .stitch
             .resample(breaksTileRasterExtent)
             .tile
+            .mapDouble { z => if(z <= 1.0) Double.NaN else z }
 
         (name, tile)
       }
@@ -87,7 +103,7 @@ class DataModel(config: Config) {
         Some(tileReader.reader[SpatialKey, Tile](LayerId(layer, zoom)).read(SpatialKey(x, y)))
       }
     } catch {
-      case e: TileNotFoundError =>
+      case e: ValueNotFoundError =>
         None
     }
 
@@ -110,7 +126,7 @@ class DataModel(config: Config) {
     }
   }
 
-  def getBreaks(layers: Seq[String], weights: Seq[Double], numBreaks: Int): Array[Double] = {
+  def getBreaks(layers: Seq[String], weights: Seq[Double], numBreaks: Int): Array[Int] = {
     val rasterTiles =
       layers.zip(weights)
         .filter(!_._1.startsWith("v:"))
@@ -120,16 +136,14 @@ class DataModel(config: Config) {
     val vectorTiles =
       createTileForVectors(layers, weights, breaksTileRasterExtent).toSeq
 
-    (rasterTiles ++ vectorTiles)
-      .localAdd
+    CustomAdd(rasterTiles ++ vectorTiles)
       .convert(DoubleConstantNoDataCellType)
-      .mapDouble { z => if(z == 0.0) { Double.NaN } else z }
       .mask(breaksTileRasterExtent.extent, VectorLayers.libya)
-      .histogramDouble
+      .histogram
       .quantileBreaks(numBreaks)
   }
 
-  def suitabilityTile(layers: Seq[String], weights: Seq[Double], z: Int, x: Int, y: Int): Option[Tile] = {
+  def suitabilityTile(layers: Seq[String], weights: Seq[Double], z: Int, x: Int, y: Int, fill: Boolean = false): Option[Tile] = {
     val extent = getExtent(z, x, y)
 
     if(!extent.intersects(VectorLayers.libya)) { None }
@@ -139,12 +153,22 @@ class DataModel(config: Config) {
           .filter(!_._1.startsWith("v:"))
           .flatMap { case (name, weight) =>
             try {
-              readTile(name, z, x, y).map(_ * weight)
+              readTile(name, z, x, y)
+                .map { tile => //tile * weight }
+                  if(fill) {
+                    tile * weight
+                  } else {
+                    tile.mapDouble { z =>
+                      if(z == 1) Double.NaN else { z * weight}
+                    }
+                  }
+                }
             } catch {
               case e: Exception =>
                 None
             }
           }
+
       val vectorTiles =
         createTileForVectors(layers, weights, RasterExtent(extent, 256, 256)).toSeq
 
@@ -154,10 +178,8 @@ class DataModel(config: Config) {
       if(tiles.isEmpty) { None }
       else {
         Some(
-          tiles
-            .localAdd
-            .convert(DoubleConstantNoDataCellType)
-            .mapDouble { z => if(z == 0.0) { Double.NaN } else z }
+          CustomAdd(tiles)
+            .convert(ShortUserDefinedNoDataCellType(0))
             .mask(extent, VectorLayers.libya)
         )
       }

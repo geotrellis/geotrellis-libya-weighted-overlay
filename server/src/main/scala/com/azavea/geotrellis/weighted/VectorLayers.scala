@@ -39,6 +39,11 @@ object Population {
   }
 }
 
+/**
+  * Converts GeoJSON encoded geometries to raster tiles in memory by buffering the lines.
+  * Not used in the application because a simple buffer does not provide sufficient visual information.
+  * Remains as an example and base for future features based on similar concepts.
+  */
 object VectorLayers {
   val AirStrikeName = """airstrikes:([\d]+)""".r
   val PopulationName = """population:([\d]+)""".r
@@ -145,74 +150,66 @@ object VectorLayers {
     }
 
   def read(fname: String): String =
-    scala.io.Source.fromFile(s"/opt/data/catalog/$fname", "UTF-8")
+    scala.io.Source.fromFile(s"${Main.geoJsonPath}/$fname", "UTF-8")
       .getLines
       .mkString
 
-  val libya: MultiPolygon =
+  lazy val libya: MultiPolygon =
     read("Libya_shape.geojson")
       .extractGeometries[MultiPolygon]
       .head
       .reproject(LatLng, WebMercator)
 
-  val airstrikes =
+  lazy val airstrikes =
     read("Airstrikes.geojson")
       .extractFeatures[PointFeature[AirStrike]]
       .map(_.mapGeom(_.reproject(LatLng, WebMercator)))
-  assert(airstrikes.length > 0)
-  val airstrikesGeom =
+
+  lazy val airstrikesGeom =
     MultiPoint(airstrikes.map(_.geom))
 
-  val populationCenters =
+  lazy val populationCenters =
     read("Libya_Geonames_wPopDiff.geojson")
       .extractFeatures[PointFeature[Population]]
       .map(_.mapGeom(_.reproject(LatLng, WebMercator)))
-  assert(populationCenters.length > 0)
 
-  val weaponRoute =
+  lazy val weaponRoute =
     read("LBY_weapon_route2_simplified.geojson")
       .extractGeometries[Line]
       .map(_.reproject(LatLng, WebMercator))
-  assert(weaponRoute.length > 0)
-  val weaponRouteGeom =
+
+  lazy val weaponRouteGeom =
     MultiLine(weaponRoute)
 
-  val peopleRoute =
+  lazy val peopleRoute =
     read("LBY_people_route2_simplified.geojson")
       .extractGeometries[Line]
       .map(_.reproject(LatLng, WebMercator))
-  assert(peopleRoute.length > 0)
-  val peopleRouteGeom =
+
+  lazy val peopleRouteGeom =
     MultiLine(peopleRoute)
 
-  val drugRoute =
+  lazy val drugRoute =
     read("LBY_drug_route2.geojson")
       .extractGeometries[Line]
       .map(_.reproject(LatLng, WebMercator))
-  assert(drugRoute.length > 0)
-  val drugRouteGeom =
+
+  lazy val drugRouteGeom =
     MultiLine(drugRoute)
 
-  val refineries =
+  lazy val refineries =
     read("Refineries.geojson")
       .extractGeometries[Point]
       .map(_.reproject(LatLng, WebMercator))
-  assert(refineries.length > 0)
-  val refineriesGeom =
+
+  lazy val refineriesGeom =
     MultiPoint(refineries)
 
-  val isAllies =
+  lazy val isAllies =
     read("IS_Allies_encoding_fix.geojson")
       .extractGeometries[Point]
       .map(_.reproject(LatLng, WebMercator))
-  assert(isAllies.length > 0)
-  val isAlliesGeom =
-    MultiPoint(isAllies)
 
-  // This is what is rasterized in the pipeline layer
-  // val oilPipelines =
-  //   read("Oil_Pipeline.geojson")
-  //     .extractGeometries[MultiLine]
-  //     .map(_.reproject(LatLng, WebMercator))
-  // assert(oilPipelines.length > 0)
+  lazy val isAlliesGeom =
+    MultiPoint(isAllies)
 }

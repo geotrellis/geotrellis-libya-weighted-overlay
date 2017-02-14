@@ -1,7 +1,7 @@
 {
   "backend": {
     "type": "file",
-    "path": "/Users/rob/proj/rb/libya-weighted-overlay/data/catalog"
+    "path": "/Users/eugene/proj/geotrellis-libya-weighted-overlay/data/catalog"
   },
   "reprojectMethod": "buffered",
   "pyramid": true,
@@ -11,6 +11,5 @@
   },
   "resampleMethod": "bilinear",
   "layoutScheme": "zoomed",
-  "cellType": "float32raw",
   "crs": "EPSG:3857"
 }
