@@ -4,12 +4,8 @@ TAG  := "latest"
 ETL_ASSEMBLY_JAR := etl/target/scala-2.11/etl-assembly-0.1.0.jar
 SERVER_ASSEMBLY_JAR := server/target/scala-2.11/libya-weighted-overlay-example-server-0.1.0.jar
 
-clean:
-	rm -rf ${SERVER_ASSEMBLY_JAR}
-	rm ./build
-	rm ./assemble
-
 rwildcard=$(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) $(filter $(subst *,%,$2),$d))
+
 
 ${SERVER_ASSEMBLY_JAR}: $(call rwildcard, server, *.scala) build.sbt
 	sbt "project server" assembly
@@ -23,8 +19,8 @@ etl/json/input.json: etl/json/input-template.json
 etl/json/output.json: etl/json/output-template.json
 	@scripts/template.sh etl/json/output.json etl/json/output-template.json
 
-ingest: ${ETL_ASSEMBLY_JAR} etl/json/input.json etl/json/output.json
-	rm -r data/catalog/ || true
+ingest: ${ETL_ASSEMBLY_JAR} etl/json/input.json etl/json/output.json etl/json/backend-profiles.json
+	rm -rf data/catalog
 	spark-submit \
 		--class com.azavea.geotrellis.weighted.Ingest \
 		--master local[*] \
@@ -53,3 +49,16 @@ test: docker-build
 	docker-compose up -d
 	sleep 2 && curl localhost:7070/system/status
 	docker-compose down
+
+
+clean:
+	rm -f ${SERVER_ASSEMBLY_JAR} ${SERVER_ASSEMBLY_JAR}
+
+cleaner: clean
+	sbt "project etl" clean
+	sbt "project server" clean
+
+cleanest: cleaner
+	rm -rf catalog
+	rm -f etl/json/input.json
+	rm -f etl/json/output.json
