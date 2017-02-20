@@ -18,15 +18,6 @@
     "cache": "NONE"
   },
   {
-    "name": "allies",
-    "format": "geotiff",
-    "backend": {
-      "type": "hadoop",
-      "path": "file:${PWD}/data/rasters/ISIL Allies.tif"
-    },
-    "cache": "NONE"
-  },
-  {
     "name": "pipeline",
     "format": "geotiff",
     "backend": {

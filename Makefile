@@ -1,3 +1,4 @@
+.PHONY: clean cleaner cleanest ingest ingest0 ingest1 ingest2
 IMG  := quay.io/lossyrob/geotrellis-libya-weighted-overlay-example
 TAG  := "latest"
 
@@ -13,14 +14,24 @@ ${SERVER_ASSEMBLY_JAR}: $(call rwildcard, server, *.scala) build.sbt
 ${ETL_ASSEMBLY_JAR}: $(call rwildcard, etl, *.scala) build.sbt
 	sbt "project etl" assembly
 
-etl/json/input.json: etl/json/input-template.json
-	@scripts/template.sh etl/json/input.json etl/json/input-template.json
+%.json: %.template
+	@scripts/template.sh $@ $<
 
-etl/json/output.json: etl/json/output-template.json
-	@scripts/template.sh etl/json/output.json etl/json/output-template.json
-
-ingest: ${ETL_ASSEMBLY_JAR} etl/json/input.json etl/json/output.json etl/json/backend-profiles.json
+ingest0:
 	rm -rf data/catalog
+
+ingest1: ${ETL_ASSEMBLY_JAR} etl/json/friction-input.json etl/json/friction-output.json etl/json/backend-profiles.json
+	spark-submit \
+		--class com.azavea.geotrellis.weighted.Ingest \
+		--master local[*] \
+		--driver-memory 12G \
+		${ETL_ASSEMBLY_JAR} \
+		--backend-profiles "file://${PWD}/etl/json/backend-profiles.json" \
+		--input "file://${PWD}/etl/json/friction-input.json" \
+		--output "file://${PWD}/etl/json/friction-output.json" \
+		--costdistance "allies,${PWD}/data/points/points.shp,200000"
+
+ingest2: ${ETL_ASSEMBLY_JAR} etl/json/input.json etl/json/output.json etl/json/backend-profiles.json
 	spark-submit \
 		--class com.azavea.geotrellis.weighted.Ingest \
 		--master local[*] \
@@ -29,6 +40,8 @@ ingest: ${ETL_ASSEMBLY_JAR} etl/json/input.json etl/json/output.json etl/json/ba
 		--backend-profiles "file://${PWD}/etl/json/backend-profiles.json" \
 		--input "file://${PWD}/etl/json/input.json" \
 		--output "file://${PWD}/etl/json/output.json"
+
+ingest: ingest0 ingest1 ingest2
 
 assembly: ${SERVER_ASSEMBLY_JAR}
 
@@ -52,7 +65,7 @@ test: docker-build
 
 
 clean:
-	rm -f ${SERVER_ASSEMBLY_JAR} ${SERVER_ASSEMBLY_JAR}
+	rm -f ${ETL_ASSEMBLY_JAR} ${SERVER_ASSEMBLY_JAR}
 
 cleaner: clean
 	sbt "project etl" clean

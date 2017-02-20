@@ -1,0 +1,15 @@
+{
+    "backend": {
+	"type": "file",
+	"path": "/home/likewise-open/AZVA-INT/jmcclain/local/src/WeightedOverlay/data/catalog"
+    },
+    "reprojectMethod": "buffered",
+    "pyramid": false,
+    "tileSize": 256,
+    "keyIndexMethod": {
+	"type": "zorder"
+    },
+    "resampleMethod": "nearest-neighbor",
+    "layoutScheme": "zoomed",
+    "crs": "EPSG:3857"
+}
