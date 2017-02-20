@@ -109,7 +109,23 @@ object Ingest extends App {
               ShapeFileReader
                 .readSimpleFeatures(shapeFile)
                 .map({ sf => sf.toGeometry[Point] })
-            val cost = layer.costdistance(points, maxCost.toDouble)
+
+            // Compute cost layer
+            val cost = {
+              val arbitraryConstant = 20
+              val most = maxCost.toDouble
+              val rdd = layer.costdistance(points, most)
+              val md = rdd.metadata
+
+              ContextRDD(
+                rdd.mapValues({ tile =>
+                  tile.mapDouble({ z =>
+                    arbitraryConstant - (z / (most / arbitraryConstant))
+                  })
+                }),
+                md
+              )
+            }
 
             // Write histogram for cost layer
             val histogram = cost.histogram()
