@@ -1,4 +1,4 @@
-.PHONY: clean cleaner cleanest ingest ingest0 ingest1 ingest2
+.PHONY: clean cleaner cleanest ingest accled airstrikes allies refineries ingest-rest
 IMG  := quay.io/lossyrob/geotrellis-libya-weighted-overlay-example
 TAG  := "latest"
 
@@ -17,10 +17,9 @@ ${ETL_ASSEMBLY_JAR}: $(call rwildcard, etl, *.scala) build.sbt
 %.json: %.template
 	@scripts/template.sh $@ $<
 
-ingest0:
-	rm -rf data/catalog
-
-ingest1: ${ETL_ASSEMBLY_JAR} etl/json/friction-input.json etl/json/friction-output.json etl/json/backend-profiles.json
+accled airstrikes allies refineries: ${ETL_ASSEMBLY_JAR} etl/json/friction-input.json etl/json/friction-output.json etl/json/backend-profiles.json
+	rm -rf ${PWD}/data/catalog/$@
+	rm -f ${PWD}/data/catalog/attributes/$@*.json
 	spark-submit \
 		--class com.azavea.geotrellis.weighted.Ingest \
 		--master local[*] \
@@ -29,9 +28,14 @@ ingest1: ${ETL_ASSEMBLY_JAR} etl/json/friction-input.json etl/json/friction-outp
 		--backend-profiles "file://${PWD}/etl/json/backend-profiles.json" \
 		--input "file://${PWD}/etl/json/friction-input.json" \
 		--output "file://${PWD}/etl/json/friction-output.json" \
-		--costdistance "allies,${PWD}/data/points/points.shp,200000"
+		--costdistance "$@,${PWD}/data/shapefiles/$@/$@.shp,200000"
 
-ingest2: ${ETL_ASSEMBLY_JAR} etl/json/input.json etl/json/output.json etl/json/backend-profiles.json
+ingest-rest: ${ETL_ASSEMBLY_JAR} etl/json/input.json etl/json/output.json etl/json/backend-profiles.json
+	rm -rf ${PWD}/data/catalog/conflict   ${PWD}/data/catalog/attributes/conflict*.json
+	rm -rf ${PWD}/data/catalog/pipeline   ${PWD}/data/catalog/attributes/pipeline*.json
+	rm -rf ${PWD}/data/catalog/population ${PWD}/data/catalog/attributes/population*.json
+	rm -rf ${PWD}/data/catalog/weapons    ${PWD}/data/catalog/attributes/weapons*.json
+	rm -rf ${PWD}/data/catalog/people     ${PWD}/data/catalog/attributes/people*.json
 	spark-submit \
 		--class com.azavea.geotrellis.weighted.Ingest \
 		--master local[*] \
@@ -41,7 +45,7 @@ ingest2: ${ETL_ASSEMBLY_JAR} etl/json/input.json etl/json/output.json etl/json/b
 		--input "file://${PWD}/etl/json/input.json" \
 		--output "file://${PWD}/etl/json/output.json"
 
-ingest: ingest0 ingest1 ingest2
+ingest: accled airstrikes allies refineries ingest-rest
 
 assembly: ${SERVER_ASSEMBLY_JAR}
 

@@ -25,3 +25,4 @@ etl/json/input.json
 etl/json/output.json
 etl/json/friction-input.json
 etl/json/friction-output.json
+catalog.tar

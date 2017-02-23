@@ -1,14 +1,5 @@
 [
   {
-    "name": "airstrikes",
-    "format": "geotiff",
-    "backend": {
-      "type": "hadoop",
-      "path": "file:${PWD}/data/rasters/Air strikes.tif"
-    },
-    "cache": "NONE"
-  },
-  {
     "name": "conflict",
     "format": "geotiff",
     "backend": {
@@ -23,15 +14,6 @@
     "backend": {
       "type": "hadoop",
       "path": "file:${PWD}/data/rasters/Distance to Oil Pipeline.tif"
-    },
-    "cache": "NONE"
-  },
-  {
-    "name": "refineries",
-    "format": "geotiff",
-    "backend": {
-      "type": "hadoop",
-      "path": "file:${PWD}/data/rasters/Oil Refinries.tif"
     },
     "cache": "NONE"
   },
