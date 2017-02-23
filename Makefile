@@ -12,10 +12,10 @@ clean:
 rwildcard=$(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) $(filter $(subst *,%,$2),$d))
 
 ${SERVER_ASSEMBLY_JAR}: $(call rwildcard, server, *.scala) build.sbt
-	sbt "project server" assembly
+	./sbt "project server" assembly
 
 ${ETL_ASSEMBLY_JAR}: $(call rwildcard, etl, *.scala) build.sbt
-	sbt "project etl" assembly
+	./sbt "project etl" assembly
 
 etl/json/input.json: etl/json/input-template.json
 	@scripts/template.sh etl/json/input.json etl/json/input-template.json
@@ -43,7 +43,7 @@ docker-run:
 	docker run -it -p 8777:8777 ${IMG}:${TAG}
 
 run:
-	sbt "project server" run
+	./sbt "project server" run
 
 docker-publish: docker-build
 	docker push ${IMG}:${TAG}
