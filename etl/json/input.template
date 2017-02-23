@@ -1,14 +1,5 @@
 [
   {
-    "name": "conflict",
-    "format": "geotiff",
-    "backend": {
-      "type": "hadoop",
-      "path": "file:${PWD}/data/rasters/Conflict Areas.tif"
-    },
-    "cache": "NONE"
-  },
-  {
     "name": "pipeline",
     "format": "geotiff",
     "backend": {

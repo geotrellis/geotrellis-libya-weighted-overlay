@@ -1,4 +1,4 @@
-.PHONY: clean cleaner cleanest ingest accled airstrikes allies refineries ingest-rest
+.PHONY: clean cleaner cleanest ingest airstrikes allies conflict refineries ingest-rest
 IMG  := quay.io/lossyrob/geotrellis-libya-weighted-overlay-example
 TAG  := "latest"
 
@@ -17,7 +17,7 @@ ${ETL_ASSEMBLY_JAR}: $(call rwildcard, etl, *.scala) build.sbt
 %.json: %.template
 	@scripts/template.sh $@ $<
 
-accled airstrikes allies refineries: ${ETL_ASSEMBLY_JAR} etl/json/friction-input.json etl/json/friction-output.json etl/json/backend-profiles.json
+airstrikes allies conflict refineries: ${ETL_ASSEMBLY_JAR} etl/json/friction-input.json etl/json/friction-output.json etl/json/backend-profiles.json
 	rm -rf ${PWD}/data/catalog/$@
 	rm -f ${PWD}/data/catalog/attributes/$@*.json
 	spark-submit \
@@ -31,7 +31,6 @@ accled airstrikes allies refineries: ${ETL_ASSEMBLY_JAR} etl/json/friction-input
 		--costdistance "$@,${PWD}/data/shapefiles/$@/$@.shp,200000"
 
 ingest-rest: ${ETL_ASSEMBLY_JAR} etl/json/input.json etl/json/output.json etl/json/backend-profiles.json
-	rm -rf ${PWD}/data/catalog/conflict   ${PWD}/data/catalog/attributes/conflict*.json
 	rm -rf ${PWD}/data/catalog/pipeline   ${PWD}/data/catalog/attributes/pipeline*.json
 	rm -rf ${PWD}/data/catalog/population ${PWD}/data/catalog/attributes/population*.json
 	rm -rf ${PWD}/data/catalog/weapons    ${PWD}/data/catalog/attributes/weapons*.json
@@ -45,7 +44,7 @@ ingest-rest: ${ETL_ASSEMBLY_JAR} etl/json/input.json etl/json/output.json etl/js
 		--input "file://${PWD}/etl/json/input.json" \
 		--output "file://${PWD}/etl/json/output.json"
 
-ingest: accled airstrikes allies refineries ingest-rest
+ingest: airstrikes allies conflict refineries ingest-rest
 
 assembly: ${SERVER_ASSEMBLY_JAR}
 
