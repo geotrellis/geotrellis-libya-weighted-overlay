@@ -30,7 +30,7 @@ airstrikes allies conflict people pipeline population refineries weapons: ${ETL_
 		--output "file://${PWD}/etl/json/friction-output.json" \
 		--costdistance "$@,${PWD}/data/shapefiles/$@/$@.shp,200000"
 
-ingest: airstrikes allies conflict people pipeline population refineries weapons
+ingest: airstrikes allies conflict pipeline population refineries
 
 assembly: ${SERVER_ASSEMBLY_JAR}
 
