@@ -1,4 +1,4 @@
-.PHONY: clean cleaner cleanest ingest airstrikes allies conflict people pipeline refineries ingest-rest
+.PHONY: clean cleaner cleanest ingest airstrikes allies conflict people pipeline refineries weapons ingest-rest
 IMG  := quay.io/lossyrob/geotrellis-libya-weighted-overlay-example
 TAG  := "latest"
 
@@ -17,7 +17,7 @@ ${ETL_ASSEMBLY_JAR}: $(call rwildcard, etl, *.scala) build.sbt
 %.json: %.template
 	@scripts/template.sh $@ $<
 
-airstrikes allies conflict people pipeline refineries: ${ETL_ASSEMBLY_JAR} etl/json/friction-input.json etl/json/friction-output.json etl/json/backend-profiles.json
+airstrikes allies conflict people pipeline refineries weapons: ${ETL_ASSEMBLY_JAR} etl/json/friction-input.json etl/json/friction-output.json etl/json/backend-profiles.json
 	rm -rf ${PWD}/data/catalog/$@
 	rm -f ${PWD}/data/catalog/attributes/$@*.json
 	spark-submit \
@@ -32,7 +32,6 @@ airstrikes allies conflict people pipeline refineries: ${ETL_ASSEMBLY_JAR} etl/j
 
 ingest-rest: ${ETL_ASSEMBLY_JAR} etl/json/input.json etl/json/output.json etl/json/backend-profiles.json
 	rm -rf ${PWD}/data/catalog/population ${PWD}/data/catalog/attributes/population*.json
-	rm -rf ${PWD}/data/catalog/weapons    ${PWD}/data/catalog/attributes/weapons*.json
 	spark-submit \
 		--class com.azavea.geotrellis.weighted.Ingest \
 		--master local[*] \
@@ -42,7 +41,7 @@ ingest-rest: ${ETL_ASSEMBLY_JAR} etl/json/input.json etl/json/output.json etl/js
 		--input "file://${PWD}/etl/json/input.json" \
 		--output "file://${PWD}/etl/json/output.json"
 
-ingest: airstrikes allies conflict refineries ingest-rest
+ingest: airstrikes allies conflict people pipeline refineries weapons ingest-rest
 
 assembly: ${SERVER_ASSEMBLY_JAR}
 

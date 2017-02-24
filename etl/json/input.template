@@ -7,14 +7,5 @@
       "path": "file:${PWD}/data/rasters/Population Centers.tif"
     },
     "cache": "NONE"
-  },
-  {
-    "name": "weapons",
-    "format": "geotiff",
-    "backend": {
-      "type": "hadoop",
-      "path": "file:${PWD}/data/rasters/Weapons Routes.tif"
-    },
-    "cache": "NONE"
   }
 ]
