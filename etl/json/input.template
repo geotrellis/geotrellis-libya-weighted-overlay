@@ -16,14 +16,5 @@
       "path": "file:${PWD}/data/rasters/Weapons Routes.tif"
     },
     "cache": "NONE"
-  },
-  {
-    "name": "people",
-    "format": "geotiff",
-    "backend": {
-      "type": "hadoop",
-      "path": "file:${PWD}/data/rasters/People Routes.tif"
-    },
-    "cache": "NONE"
   }
 ]
