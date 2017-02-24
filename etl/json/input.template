@@ -1,14 +1,5 @@
 [
   {
-    "name": "pipeline",
-    "format": "geotiff",
-    "backend": {
-      "type": "hadoop",
-      "path": "file:${PWD}/data/rasters/Distance to Oil Pipeline.tif"
-    },
-    "cache": "NONE"
-  },
-  {
     "name": "population",
     "format": "geotiff",
     "backend": {

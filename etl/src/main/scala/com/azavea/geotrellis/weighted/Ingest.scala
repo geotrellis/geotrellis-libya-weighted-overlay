@@ -105,16 +105,16 @@ object Ingest extends App {
 
             val Array(costLayer, shapeFile, maxCost) =
               args(args.indexOf("--costdistance") + 1).split(",")
-            val points: List[Point] =
+            val geometries =
               ShapeFileReader
                 .readSimpleFeatures(shapeFile)
-                .map({ sf => sf.toGeometry[Point] })
+                .map({ sf => sf.toGeometry[Geometry] })
 
             // Compute cost layer
             val cost = {
               val arbitraryConstant = 20
               val most = maxCost.toDouble
-              val rdd = layer.costdistance(points, most)
+              val rdd = layer.costdistance(geometries, most)
               val md = rdd.metadata
 
               ContextRDD(
