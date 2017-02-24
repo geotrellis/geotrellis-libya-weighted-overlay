@@ -1,4 +1,4 @@
-.PHONY: clean cleaner cleanest ingest airstrikes allies conflict people pipeline refineries weapons ingest-rest
+.PHONY: clean cleaner cleanest ingest airstrikes allies conflict people pipeline population refineries weapons
 IMG  := quay.io/lossyrob/geotrellis-libya-weighted-overlay-example
 TAG  := "latest"
 
@@ -17,7 +17,7 @@ ${ETL_ASSEMBLY_JAR}: $(call rwildcard, etl, *.scala) build.sbt
 %.json: %.template
 	@scripts/template.sh $@ $<
 
-airstrikes allies conflict people pipeline refineries weapons: ${ETL_ASSEMBLY_JAR} etl/json/friction-input.json etl/json/friction-output.json etl/json/backend-profiles.json
+airstrikes allies conflict people pipeline population refineries weapons: ${ETL_ASSEMBLY_JAR} etl/json/friction-input.json etl/json/friction-output.json etl/json/backend-profiles.json
 	rm -rf ${PWD}/data/catalog/$@
 	rm -f ${PWD}/data/catalog/attributes/$@*.json
 	spark-submit \
@@ -30,18 +30,7 @@ airstrikes allies conflict people pipeline refineries weapons: ${ETL_ASSEMBLY_JA
 		--output "file://${PWD}/etl/json/friction-output.json" \
 		--costdistance "$@,${PWD}/data/shapefiles/$@/$@.shp,200000"
 
-ingest-rest: ${ETL_ASSEMBLY_JAR} etl/json/input.json etl/json/output.json etl/json/backend-profiles.json
-	rm -rf ${PWD}/data/catalog/population ${PWD}/data/catalog/attributes/population*.json
-	spark-submit \
-		--class com.azavea.geotrellis.weighted.Ingest \
-		--master local[*] \
-		--driver-memory 2G \
-		${ETL_ASSEMBLY_JAR} \
-		--backend-profiles "file://${PWD}/etl/json/backend-profiles.json" \
-		--input "file://${PWD}/etl/json/input.json" \
-		--output "file://${PWD}/etl/json/output.json"
-
-ingest: airstrikes allies conflict people pipeline refineries weapons ingest-rest
+ingest: airstrikes allies conflict people pipeline population refineries weapons
 
 assembly: ${SERVER_ASSEMBLY_JAR}
 
@@ -63,7 +52,6 @@ test: docker-build
 	sleep 2 && curl localhost:7070/system/status
 	docker-compose down
 
-
 clean:
 	rm -f ${ETL_ASSEMBLY_JAR} ${SERVER_ASSEMBLY_JAR}
 
@@ -75,3 +63,5 @@ cleanest: cleaner
 	rm -rf catalog
 	rm -f etl/json/input.json
 	rm -f etl/json/output.json
+	rm -f etl/json/friction-input.json
+	rm -f etl/json/friction-output.json

@@ -1,11 +1,2 @@
 [
-  {
-    "name": "population",
-    "format": "geotiff",
-    "backend": {
-      "type": "hadoop",
-      "path": "file:${PWD}/data/rasters/Population Centers.tif"
-    },
-    "cache": "NONE"
-  }
 ]
