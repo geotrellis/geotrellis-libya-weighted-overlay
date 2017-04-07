@@ -16,17 +16,23 @@
 
 package com.azavea.geotrellis.weighted
 
+import geotrellis.geotools._
 import geotrellis.raster._
 import geotrellis.raster.histogram._
 import geotrellis.raster.io._
 import geotrellis.raster.Tile
+import geotrellis.shapefile._
 import geotrellis.spark._
+import geotrellis.spark.costdistance._
 import geotrellis.spark.etl.config._
 import geotrellis.spark.etl.Etl
 import geotrellis.spark.io._
 import geotrellis.spark.io.file._
+import geotrellis.spark.pyramid.Pyramid
+import geotrellis.spark.tiling.ZoomedLayoutScheme
 import geotrellis.spark.util.SparkUtils
-import geotrellis.vector.ProjectedExtent
+import geotrellis.vector._
+import geotrellis.proj4.CRS
 
 import org.apache.spark.SparkConf
 import org.apache.spark.rdd.RDD
@@ -35,8 +41,15 @@ import org.apache.spark.rdd.RDD
 object Ingest extends App {
   implicit val sc = SparkUtils.createSparkContext("Libya Weighted Overlay ETL", new SparkConf(true))
 
+  val costDistance: Boolean = args.contains("--costdistance")
+  val args2 = {
+    val index = args.indexOf("--costdistance")
+    if (index >= 0) args.take(index) ++ args.drop(index+2)
+    else args
+  }
+
   try {
-    EtlConf(args) foreach { conf =>
+    EtlConf(args2) foreach { conf =>
       val etl = Etl(conf)
 
       // Load the source tiles,
@@ -71,17 +84,61 @@ object Ingest extends App {
 
       etl.save[SpatialKey, Tile](LayerId(etl.input.name, zoom), modifiedLayer,
         { (attributeStore, layerWriter, layerId, layer: TileLayerRDD[SpatialKey]) =>
-          layerWriter.write(layerId, layer)
 
-          // Save off histogram of the base layer, store in zoom 0's attributes.
-          if(!s.contains(layerId.name)) {
-            val histogram = layer.histogram()
-            attributeStore.write(
-              layerId.copy(zoom = 0),
-              "histogram",
-              histogram
-            )
+          if (!costDistance) {
+            layerWriter.write(layerId, layer)
+
+            // Save off histogram of the base layer, store in zoom 0's attributes.
+            if(!s.contains(layerId.name)) {
+              val histogram = layer.histogram()
+              attributeStore.write(
+                layerId.copy(zoom = 0),
+                "histogram",
+                histogram
+              )
+              s += layerId.name
+            }
+          }
+          else if (costDistance && s.isEmpty) {
+            require(!etl.output.pyramid)
             s += layerId.name
+
+            val Array(costLayer, shapeFile, maxCost) =
+              args(args.indexOf("--costdistance") + 1).split(",")
+            val geometries =
+              ShapeFileReader
+                .readSimpleFeatures(shapeFile)
+                .map({ sf => sf.toGeometry[Geometry] })
+
+            // Compute cost layer
+            val cost = {
+              val arbitraryConstant = 20
+              val most = maxCost.toDouble
+              val rdd = layer.costdistance(geometries, most)
+              val md = rdd.metadata
+
+              ContextRDD(
+                rdd.mapValues({ tile =>
+                  tile.mapDouble({ z =>
+                    arbitraryConstant - (z / (most / arbitraryConstant))
+                  })
+                }),
+                md
+              )
+            }
+
+            // Write histogram for cost layer
+            val histogram = cost.histogram()
+            attributeStore.write(LayerId(costLayer, 0), "histogram", histogram)
+
+            // Write cost pyramid
+            val crs = CRS.fromName(etl.output.crs.getOrElse(etl.input.crs.getOrElse(throw new Exception)))
+            val tileSize = etl.output.tileSize
+            val layoutScheme = ZoomedLayoutScheme(crs, tileSize)
+            Pyramid.upLevels(cost, layoutScheme, layerId.zoom, 1)({ (rdd, zoom) =>
+              val id = LayerId(costLayer, zoom)
+              layerWriter.write(id, rdd)
+            })
           }
         }
       )

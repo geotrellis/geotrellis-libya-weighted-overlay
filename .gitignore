@@ -20,3 +20,9 @@ data/*.qml
 data/catalog/*
 deployment/*.tfstate
 deployment/*.tfstate.backup
+catalog
+etl/json/input.json
+etl/json/output.json
+etl/json/friction-input.json
+etl/json/friction-output.json
+catalog.tar

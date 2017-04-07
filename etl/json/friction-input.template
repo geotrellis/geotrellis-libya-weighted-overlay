@@ -1,0 +1,11 @@
+[
+    {
+	"name": "friction",
+	"format": "geotiff",
+	"backend": {
+	    "type": "hadoop",
+	    "path": "file:${PWD}/data/rasters/road_friction.tif"
+	},
+	"cache": "NONE"
+    }
+]
